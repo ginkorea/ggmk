@@ -12,6 +12,10 @@ void serial_putc(char c);
 void serial_puts(const char *s);
 void kprintf(const char *fmt, ...);
 
+/* Polling serial input (BSP-only, no locking). */
+int serial_data_ready(void);  /* non-zero if data available */
+int serial_getc(void);        /* read byte, or -1 if none   */
+
 /* Disable interrupts, print crash header, halt. Never returns. */
 __attribute__((noreturn, format(printf, 3, 4)))
 void panic(const char *file, int line, const char *fmt, ...);

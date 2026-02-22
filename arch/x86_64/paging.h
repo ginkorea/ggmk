@@ -33,6 +33,12 @@ uint64_t paging_read_cr3(void);
 /* Allocate a zeroed page for use as a page table. */
 uint64_t paging_alloc_table(void);
 
+/* Walk page tables for virt, fill raw entries at each level.
+ * Returns depth reached: 1=PML4 only, 2=PDP, 3=PD, 4=PT.
+ * Stops early at not-present entries or PS (huge page) bits. */
+int paging_walk(uint64_t virt, uint64_t *pml4e, uint64_t *pdpe,
+                uint64_t *pde, uint64_t *pte);
+
 /* Invalidate a single TLB entry on the local CPU. */
 static inline void paging_invlpg(uint64_t virt_addr) {
     __asm__ volatile("invlpg (%0)" :: "r"(virt_addr) : "memory");

@@ -39,4 +39,7 @@ int   vmm_demand_page(uint64_t fault_addr);
 /* TLB shootdown: invalidate a page on all CPUs. */
 void  vmm_tlb_shootdown(uint64_t virt_addr);
 
+/* Get current kernel heap usage in bytes. */
+uint64_t vmm_get_heap_used(void);
+
 #endif /* GMK_VMM_H */

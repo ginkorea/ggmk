@@ -105,6 +105,43 @@ uint64_t paging_unmap(uint64_t virt_addr) {
     return phys;
 }
 
+int paging_walk(uint64_t virt, uint64_t *pml4e, uint64_t *pdpe,
+                uint64_t *pde, uint64_t *pte) {
+    uint64_t cr3 = paging_read_cr3() & ~0xFFFULL;
+
+    uint16_t pml4_idx = (virt >> 39) & 0x1FF;
+    uint16_t pdp_idx  = (virt >> 30) & 0x1FF;
+    uint16_t pd_idx   = (virt >> 21) & 0x1FF;
+    uint16_t pt_idx   = (virt >> 12) & 0x1FF;
+
+    uint64_t *pml4 = (uint64_t *)phys_to_virt(cr3);
+    *pml4e = pml4[pml4_idx];
+    *pdpe = *pde = *pte = 0;
+
+    if (!(*pml4e & PTE_PRESENT))
+        return 1;
+
+    uint64_t *pdp = (uint64_t *)phys_to_virt(*pml4e & ~0xFFFULL);
+    *pdpe = pdp[pdp_idx];
+
+    if (!(*pdpe & PTE_PRESENT))
+        return 2;
+    if (*pdpe & PTE_PS)
+        return 2; /* 1GB huge page */
+
+    uint64_t *pd = (uint64_t *)phys_to_virt(*pdpe & ~0xFFFULL);
+    *pde = pd[pd_idx];
+
+    if (!(*pde & PTE_PRESENT))
+        return 3;
+    if (*pde & PTE_PS)
+        return 3; /* 2MB huge page */
+
+    uint64_t *pt = (uint64_t *)phys_to_virt(*pde & ~0xFFFULL);
+    *pte = pt[pt_idx];
+    return 4;
+}
+
 void map_mmio(uint64_t phys, size_t size) {
     uint64_t flags = PTE_PRESENT | PTE_WRITABLE | PTE_PCD | PTE_PWT;
     uint64_t end = (phys + size + 0xFFF) & ~0xFFFULL;

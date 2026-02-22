@@ -54,7 +54,7 @@ static const char *exception_names[] = {
  * is set to false, causing all worker loops to exit. */
 static _Atomic(bool) *shutdown_flag = 0;
 static volatile uint32_t shutdown_ticks = 0;
-static volatile uint32_t timer_count = 0;
+static volatile uint64_t timer_count = 0;
 
 void idt_set_shutdown_timer(uint32_t ticks, _Atomic(bool) *flag) {
     shutdown_flag = flag;
@@ -136,4 +136,8 @@ void idt_init(void) {
 
 void idt_load(void) {
     __asm__ volatile("lidt (%0)" : : "r"(&idtr) : "memory");
+}
+
+uint64_t idt_get_timer_count(void) {
+    return timer_count;
 }

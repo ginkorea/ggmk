@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Kernel main: boot GMK, submit test tasks, enter worker loop
+ * GMK/cpu — Kernel main: boot GMK, submit test tasks, enter CLI
  */
 #include "serial.h"
 #include "lapic.h"
@@ -10,6 +10,7 @@
 #include "boot_alloc.h"
 #include "pmm.h"
 #include "mem.h"
+#include "cli.h"
 
 #include "../../include/gmk/boot.h"
 #include "../../include/gmk/worker.h"
@@ -41,6 +42,25 @@ static gmk_module_t echo_module = {
     .n_handlers = 1,
     .channels   = 0,
     .n_channels = 0,
+    .init       = 0,
+    .fini       = 0,
+};
+
+/* ── CLI module definition (PRD §4.12) ─────────────────────────── */
+static gmk_chan_decl_t cli_channels[] = {
+    { .name = "cli.cmd",  .direction = GMK_CHAN_PRODUCE, .msg_type = 0,
+      .mode = GMK_CHAN_P2P, .guarantee = GMK_CHAN_LOSSLESS },
+    { .name = "cli.resp", .direction = GMK_CHAN_CONSUME, .msg_type = 0,
+      .mode = GMK_CHAN_P2P, .guarantee = GMK_CHAN_LOSSLESS },
+};
+
+static gmk_module_t cli_module = {
+    .name       = "cli",
+    .version    = GMK_VERSION(0, 1, 0),
+    .handlers   = 0,
+    .n_handlers = 0,
+    .channels   = cli_channels,
+    .n_channels = 2,
     .init       = 0,
     .fini       = 0,
 };
@@ -87,13 +107,13 @@ void kmain(uint32_t cpu_count) {
     };
 
     /* Register modules */
-    gmk_module_t *modules[] = { &echo_module };
+    gmk_module_t *modules[] = { &echo_module, &cli_module };
 
     kprintf("Booting GMK kernel: %u workers, %lu MB arena\n",
             cfg.n_workers, (unsigned long)(cfg.arena_size >> 20));
 
     /* Boot the kernel subsystems */
-    int rc = gmk_boot(&kernel, &cfg, modules, 1);
+    int rc = gmk_boot(&kernel, &cfg, modules, 2);
     if (rc != 0) {
         PANIC("gmk_boot failed (rc=%d)", rc);
     }
@@ -187,35 +207,10 @@ void kmain(uint32_t cpu_count) {
     }
     kprintf("Submitted 16 tasks.\n");
 
-    /* Set shutdown timer: after 500 LAPIC timer ticks (~500ms),
-     * BSP's running flag is cleared, causing it to exit the worker loop. */
-    idt_set_shutdown_timer(500, &kernel.pool.workers[0].running);
+    /* BSP enters CLI loop (worker 0 is never started — BSP is console) */
+    cli_run(&kernel);
 
-    /* BSP becomes worker 0 and enters the worker loop */
-    kprintf("BSP entering worker loop as worker 0\n");
-    gmk_worker_loop(&kernel.pool.workers[0]);
-
-    /* BSP exited — now stop all other workers */
-    for (uint32_t i = 1; i < cfg.n_workers; i++)
-        gmk_atomic_store(&kernel.pool.workers[i].running, false,
-                        memory_order_release);
-    gmk_worker_wake_all(&kernel.pool);
-
-    /* Brief delay for APs to exit */
-    for (volatile uint32_t d = 0; d < 1000000; d++)
-        __asm__ volatile("pause");
-
-    /* Report results */
-    kprintf("\n=== Results ===\n");
-    uint64_t total = 0;
-    for (uint32_t i = 0; i < kernel.pool.n_workers; i++) {
-        uint64_t count = gmk_atomic_load(
-            &kernel.pool.workers[i].tasks_dispatched, memory_order_relaxed);
-        total += count;
-        kprintf("  worker %u dispatched %lu tasks\n", i, (unsigned long)count);
-    }
-    kprintf("Total: %lu / 16 tasks dispatched.\n", (unsigned long)total);
-
+    /* CLI returned (user typed 'halt') — system idle */
     kprintf("\nGMK kernel halted. System idle.\n");
     for (;;) __asm__ volatile("sti; hlt");
 }

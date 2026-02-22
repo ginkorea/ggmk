@@ -28,4 +28,7 @@ void idt_load(void);
  * *flag is set to false (triggers worker loop exit). */
 void idt_set_shutdown_timer(uint32_t ticks, _Atomic(bool) *flag);
 
+/* Get timer tick count since boot. */
+uint64_t idt_get_timer_count(void);
+
 #endif /* GMK_IDT_H */

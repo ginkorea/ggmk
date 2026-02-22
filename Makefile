@@ -78,6 +78,7 @@ KERN_ARCH_C := $(ARCH)/entry.c \
                $(ARCH)/pci.c \
                $(ARCH)/lapic.c \
                $(ARCH)/smp.c \
+               $(ARCH)/cli.c \
                $(ARCH)/kmain.c
 
 KERN_ARCH_S := $(ARCH)/idt_stubs.S \

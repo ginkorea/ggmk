@@ -188,3 +188,7 @@ void vmm_tlb_shootdown(uint64_t virt_addr) {
     /* Clear shootdown address */
     atomic_store_explicit(&tlb_shootdown_addr, 0, memory_order_release);
 }
+
+uint64_t vmm_get_heap_used(void) {
+    return heap_next - VMM_HEAP_BASE;
+}

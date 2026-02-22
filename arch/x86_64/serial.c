@@ -142,6 +142,18 @@ void kprintf(const char *fmt, ...) {
     va_end(ap);
 }
 
+/* ── Serial input (polling, BSP-only) ─────────────────────────────── */
+
+int serial_data_ready(void) {
+    return inb(COM1 + 5) & 0x01;
+}
+
+int serial_getc(void) {
+    if (!serial_data_ready())
+        return -1;
+    return inb(COM1);
+}
+
 void panic(const char *file, int line, const char *fmt, ...) {
     __asm__ volatile("cli");
 

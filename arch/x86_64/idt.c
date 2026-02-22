@@ -3,6 +3,7 @@
  */
 #include "idt.h"
 #include "lapic.h"
+#include "smp.h"
 #include "serial.h"
 #include "vmm.h"
 
@@ -102,12 +103,17 @@ void isr_handler(interrupt_frame_t *frame) {
         for (;;) __asm__ volatile("cli; hlt");
     }
 
-    /* Timer tick (vector 32): check shutdown countdown */
+    /* Timer tick (vector 32): only BSP maintains the wall-clock counter.
+     * All CPUs receive vector 32 from their own LAPIC timer — without
+     * this guard, timer_count climbs at N*1000 Hz instead of 1000 Hz. */
     if (vec == 32) {
-        timer_count++;
-        if (shutdown_flag && shutdown_ticks > 0 && timer_count >= shutdown_ticks) {
-            __atomic_store_n(shutdown_flag, 0, __ATOMIC_RELEASE);
-            shutdown_ticks = 0; /* one-shot */
+        if (lapic_id() == smp_bsp_lapic_id()) {
+            timer_count++;
+            if (shutdown_flag && shutdown_ticks > 0 &&
+                timer_count >= shutdown_ticks) {
+                __atomic_store_n(shutdown_flag, 0, __ATOMIC_RELEASE);
+                shutdown_ticks = 0; /* one-shot */
+            }
         }
     }
 

@@ -4,7 +4,9 @@ A system of peer microkernels spanning GPU and CPU. The GPU kernel (GMK/gpu) own
 
 ## Status
 
-**GMK/cpu v0.1** — the CPU-side microkernel — is implemented and tested as both a hosted library and a bootable bare-metal x86_64 kernel. The same source files compile in both modes via `#ifdef GMK_FREESTANDING` guards. The hosted build runs on Linux with pthreads; the bare-metal build boots via the Limine protocol and runs on real or emulated x86_64 hardware.
+**GMK/cpu v0.2** — the CPU-side microkernel — is implemented and tested as both a hosted library and a bootable bare-metal x86_64 kernel. The same source files compile in both modes via `#ifdef GMK_FREESTANDING` guards. The hosted build runs on Linux with pthreads; the bare-metal build boots via the Limine protocol and runs on real or emulated x86_64 hardware.
+
+The bare-metal kernel now owns real peripherals: PCI bus enumeration, virtio-blk block device I/O, a virtual memory manager with demand paging and TLB shootdown, PIT-calibrated LAPIC timer, and IRQ-safe serial output. All 4 CPUs participate in work stealing with deterministic SMP synchronization.
 
 GMK/gpu (CUDA kernel) and cross-kernel bridge channels are planned for future work.
 
@@ -47,6 +49,9 @@ GMK/gpu (GPU)                           GMK/cpu (CPU)
 | **Modules** | Function pointer dispatch table indexed by type ID. Poison detection via failure threshold. |
 | **Workers** | N worker loops running gather-dispatch-park. Hosted: pthreads + `pthread_cond_timedwait`. Bare-metal: per-CPU `sti;hlt;cli` + LAPIC IPI wake. |
 | **Boot** | `gmk_boot` initializes arena → scheduler → channels → modules → workers. `gmk_halt` tears down in reverse. |
+| **PCI** | Legacy I/O port (0xCF8/0xCFC) bus 0 enumeration with multi-function support. BAR decode, device lookup by vendor/device ID. |
+| **VMM** | Kernel heap (128 MB virtual range) with bump allocator, demand paging via page fault handler, and cross-CPU TLB shootdown via IPI. |
+| **Virtio** | Legacy PCI transport (I/O BAR), split virtqueue setup, and virtio-blk driver for synchronous single-sector read/write with DMA. |
 
 ## Bare-Metal Kernel
 
@@ -55,43 +60,57 @@ GMK/cpu runs as a freestanding x86_64 kernel booted by [Limine v8](https://githu
 ### Boot Sequence
 
 ```
-Limine → _kstart → serial(COM1) → GDT → IDT(256 vectors) → HHDM
-       → PMM(bitmap) → boot_alloc(8MB bump) → LAPIC(1ms timer)
-       → SMP(goto_address) → kmain → gmk_boot → worker loops
+Limine → _kstart → serial(COM1, IRQ-safe lock) → GDT → IDT(256 vectors)
+       → HHDM → PMM(bitmap) → boot_alloc(8MB bump)
+       → LAPIC(PIT-calibrated periodic timer) → VMM(128MB heap, demand paging)
+       → PCI(bus 0 scan) → SMP(goto_address, per-AP ready flags)
+       → kmain → virtio-blk init → gmk_boot → worker loops
 ```
 
 ### Platform Abstraction
 
 | Primitive | Hosted | Bare-Metal |
 |-----------|--------|------------|
-| Lock | `pthread_mutex` | Ticket spinlock |
+| Lock | `pthread_mutex` | Ticket spinlock (IRQ-safe in serial) |
 | Worker park | `pthread_cond_timedwait` (1ms) | `sti; hlt; cli` (LAPIC timer wakes) |
 | Worker wake | `pthread_cond_signal` | `lapic_send_ipi(cpu_id, 0xFE)` |
 | Arena memory | `aligned_alloc` | PMM page allocation via HHDM |
+| Kernel heap | `calloc` / `free` | VMM bump allocator + demand paging |
 | Kernel objects | `calloc` / `free` | Boot bump allocator (never frees) |
+| Block I/O | — | Virtio-blk via PCI legacy transport |
+| Timer calibration | — | PIT channel 2 → LAPIC ticks/ms |
+| TLB management | — | `invlpg` + IPI 0xFD shootdown |
+| Crash reporting | `abort()` | `PANIC()` → serial dump + halt |
 | Strings | `<string.h>` | Freestanding `memset`/`memcpy`/`memmove` |
 
-### Arch File Layout
+### File Layout
 
 ```
 arch/x86_64/
   entry.c          _kstart + Limine request structs
-  kmain.c          kernel main, test echo handler
-  serial.c/.h      COM1 115200 8N1, kprintf
+  kmain.c          kernel main, test echo handler, smoke tests
+  serial.c/.h      COM1 115200 8N1, kprintf (IRQ-safe lock), panic()
   gdt.c/.h         5-entry GDT, segment reload
-  idt.c/.h         256-entry IDT, exception handler, shutdown timer
+  idt.c/.h         256-entry IDT, exception/fault handlers, shutdown timer
   idt_stubs.S      ISR assembly thunks (.altmacro generated)
   pmm.c/.h         bitmap page frame allocator
-  paging.c/.h      MMIO page mapping into HHDM
+  paging.c/.h      4-level page table map/unmap, MMIO mapping
+  vmm.c/.h         kernel heap (128 MB), demand paging, TLB shootdown
+  pci.c/.h         PCI bus 0 enumeration via I/O ports 0xCF8/0xCFC
   mem.h            phys_to_virt / virt_to_phys
   boot_alloc.c/.h  boot-time bump allocator
   memops.c         freestanding memset/memcpy/memmove/memcmp
-  lapic.c/.h       LAPIC init, EOI, IPI, periodic timer
+  lapic.c/.h       LAPIC init, PIT-calibrated timer, EOI, IPI
   smp.c/.h         SMP bringup via Limine goto_address
   ctx_switch.S     callee-saved register + RSP swap
   linker.ld        higher-half at 0xffffffff80000000
   limine.conf      bootloader config
   limine/limine.h  vendored Limine v8 protocol header
+
+drivers/virtio/
+  virtio.h         vring structs, constants, size helpers
+  virtio_pci.c/.h  legacy I/O BAR transport, virtqueue setup
+  virtio_blk.c/.h  block device driver (single-sector sync I/O)
 ```
 
 ## Building
@@ -111,7 +130,7 @@ Requires: GCC with C11 support, pthreads. No external dependencies.
 ```
 make kernel    # build build/gmk_kernel.elf (freestanding x86_64)
 make iso       # build bootable ISO (requires xorriso + Limine)
-make run       # boot in QEMU: 4 CPUs, 256MB, serial on stdio
+make run       # boot in QEMU: 4 CPUs, 256MB, virtio-blk, serial on stdio
 make run-debug # same as run, but paused for GDB (-S -s)
 ```
 

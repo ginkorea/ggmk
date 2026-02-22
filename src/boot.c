@@ -2,15 +2,13 @@
  * GMK/cpu — gmk_boot/gmk_halt sequence
  */
 #include "gmk/boot.h"
-#ifndef GMK_FREESTANDING
-#include <string.h>
-#endif
+#include "gmk/hal.h"
 
 int gmk_boot(gmk_kernel_t *k, const gmk_boot_cfg_t *cfg,
              gmk_module_t **modules_arr, uint32_t n_modules) {
     if (!k) return -1;
 
-    memset(k, 0, sizeof(*k));
+    gmk_hal_memset(k, 0, sizeof(*k));
     atomic_init(&k->running, false);
     atomic_init(&k->tick, 0);
 

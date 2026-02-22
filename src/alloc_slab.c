@@ -4,9 +4,7 @@
  */
 #include "gmk/alloc.h"
 #include <stdlib.h>
-#ifndef GMK_FREESTANDING
 #include <string.h>
-#endif
 
 int gmk_slab_init(gmk_slab_t *s, void *mem, size_t mem_size, uint32_t obj_size) {
     if (!s || !mem || obj_size == 0) return -1;

@@ -6,12 +6,7 @@
  * Drain limit per check: GMK_EVQ_DRAIN_LIMIT.
  */
 #include "gmk/sched.h"
-#ifdef GMK_FREESTANDING
-#include "../../arch/x86_64/boot_alloc.h"
-#else
-#include <stdlib.h>
-#include <string.h>
-#endif
+#include "gmk/hal.h"
 
 static inline uint64_t evq_key(const gmk_task_t *t, uint32_t seq) {
     uint32_t tick = (uint32_t)t->meta0;  /* meta0 used as tick for EVQ */
@@ -58,11 +53,7 @@ static void heap_sift_down(gmk_evq_entry_t *heap, uint32_t count, uint32_t idx) 
 int gmk_evq_init(gmk_evq_t *evq, uint32_t cap) {
     if (!evq || cap == 0) return -1;
 
-#ifdef GMK_FREESTANDING
-    evq->heap = (gmk_evq_entry_t *)boot_calloc(cap, sizeof(gmk_evq_entry_t));
-#else
-    evq->heap = (gmk_evq_entry_t *)calloc(cap, sizeof(gmk_evq_entry_t));
-#endif
+    evq->heap = (gmk_evq_entry_t *)gmk_hal_calloc(cap, sizeof(gmk_evq_entry_t));
     if (!evq->heap) return -1;
 
     evq->count    = 0;
@@ -74,11 +65,7 @@ int gmk_evq_init(gmk_evq_t *evq, uint32_t cap) {
 
 void gmk_evq_destroy(gmk_evq_t *evq) {
     if (!evq) return;
-#ifdef GMK_FREESTANDING
-    boot_free(evq->heap);
-#else
-    free(evq->heap);
-#endif
+    gmk_hal_free(evq->heap);
     evq->heap = NULL;
     gmk_lock_destroy(&evq->lock);
 }

@@ -2,13 +2,7 @@
  * GMK/cpu — SPSC ring buffer implementation
  */
 #include "gmk/ring_spsc.h"
-
-#ifdef GMK_FREESTANDING
-#include "../../arch/x86_64/boot_alloc.h"
-#else
-#include <stdlib.h>
-#include <string.h>
-#endif
+#include "gmk/hal.h"
 
 int gmk_ring_spsc_init(gmk_ring_spsc_t *r, uint32_t cap, uint32_t elem_size) {
     if (!r || !gmk_is_power_of_two(cap) || elem_size == 0)
@@ -17,13 +11,8 @@ int gmk_ring_spsc_init(gmk_ring_spsc_t *r, uint32_t cap, uint32_t elem_size) {
     r->cap       = cap;
     r->mask      = cap - 1;
     r->elem_size = elem_size;
-#ifdef GMK_FREESTANDING
-    r->buf       = (uint8_t *)boot_aligned_alloc(GMK_CACHE_LINE,
-                                                  (size_t)cap * elem_size);
-#else
-    r->buf       = (uint8_t *)aligned_alloc(GMK_CACHE_LINE,
-                                             (size_t)cap * elem_size);
-#endif
+    r->buf       = (uint8_t *)gmk_hal_page_alloc((size_t)cap * elem_size,
+                                                   GMK_CACHE_LINE);
     if (!r->buf) return -1;
 
     atomic_init(&r->head, 0);
@@ -48,11 +37,7 @@ int gmk_ring_spsc_init_buf(gmk_ring_spsc_t *r, uint32_t cap,
 
 void gmk_ring_spsc_destroy(gmk_ring_spsc_t *r) {
     if (r && r->buf) {
-#ifdef GMK_FREESTANDING
-        boot_free(r->buf);
-#else
-        free(r->buf);
-#endif
+        gmk_hal_page_free(r->buf, (size_t)r->cap * r->elem_size);
         r->buf = NULL;
     }
 }
@@ -65,7 +50,7 @@ int gmk_ring_spsc_push(gmk_ring_spsc_t *r, const void *elem) {
         return -1; /* full */
 
     uint32_t idx = tail & r->mask;
-    memcpy(r->buf + (size_t)idx * r->elem_size, elem, r->elem_size);
+    gmk_hal_memcpy(r->buf + (size_t)idx * r->elem_size, elem, r->elem_size);
 
     gmk_atomic_store(&r->tail, tail + 1, memory_order_release);
     return 0;
@@ -79,7 +64,7 @@ int gmk_ring_spsc_pop(gmk_ring_spsc_t *r, void *elem) {
         return -1; /* empty */
 
     uint32_t idx = head & r->mask;
-    memcpy(elem, r->buf + (size_t)idx * r->elem_size, r->elem_size);
+    gmk_hal_memcpy(elem, r->buf + (size_t)idx * r->elem_size, r->elem_size);
 
     gmk_atomic_store(&r->head, head + 1, memory_order_release);
     return 0;

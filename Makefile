@@ -5,14 +5,14 @@
 CC      := gcc
 AR      := ar
 CFLAGS  := -std=c11 -Wall -Wextra -Werror -O2 -pthread -I include -D_GNU_SOURCE
-LDFLAGS := -pthread -lm
+LDFLAGS := -pthread -lm -ldl
 
 BUILD   := build
 SRC     := src
 TEST    := test
 INC     := include/gmk
 
-# ── Source files ─────────────────────────────────────────────
+# ── Core source files ───────────────────────────────────────
 SRCS := $(SRC)/ring_spsc.c \
         $(SRC)/ring_mpmc.c \
         $(SRC)/alloc_arena.c \
@@ -32,7 +32,19 @@ SRCS := $(SRC)/ring_spsc.c \
         $(SRC)/worker.c \
         $(SRC)/boot.c
 
-OBJS := $(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(SRCS))
+# ── Linux HAL sources (hosted build) ────────────────────────
+HAL_LINUX := hal/linux
+HAL_LINUX_SRCS := $(HAL_LINUX)/thread.c \
+                  $(HAL_LINUX)/lock.c \
+                  $(HAL_LINUX)/park.c \
+                  $(HAL_LINUX)/time.c \
+                  $(HAL_LINUX)/mem.c
+
+# ── Hosted build: core + linux HAL ──────────────────────────
+HOSTED_SRCS := $(SRCS) $(HAL_LINUX_SRCS)
+CORE_OBJS := $(patsubst $(SRC)/%.c,$(BUILD)/%.o,$(SRCS))
+HAL_LINUX_OBJS := $(patsubst $(HAL_LINUX)/%.c,$(BUILD)/hal_linux_%.o,$(HAL_LINUX_SRCS))
+OBJS := $(CORE_OBJS) $(HAL_LINUX_OBJS)
 
 # ── Library ──────────────────────────────────────────────────
 LIB := $(BUILD)/libgmk_cpu.a
@@ -89,12 +101,21 @@ DRIVERS := drivers
 KERN_DRIVER_C := $(DRIVERS)/virtio/virtio_pci.c \
                  $(DRIVERS)/virtio/virtio_blk.c
 
-# Kernel uses the same src/*.c but compiled with KERN_CFLAGS
+# ── Baremetal HAL sources ───────────────────────────────────
+HAL_BM := hal/x86_baremetal
+HAL_BM_SRCS := $(HAL_BM)/thread.c \
+               $(HAL_BM)/lock.c \
+               $(HAL_BM)/park.c \
+               $(HAL_BM)/time.c \
+               $(HAL_BM)/mem.c
+
+# Kernel objects: core + baremetal HAL + arch + drivers
 KERN_SRC_OBJS := $(patsubst $(SRC)/%.c,$(KERN_BUILD)/%.o,$(SRCS))
+KERN_HAL_OBJS := $(patsubst $(HAL_BM)/%.c,$(KERN_BUILD)/hal_%.o,$(HAL_BM_SRCS))
 KERN_ARCH_C_OBJS := $(patsubst $(ARCH)/%.c,$(KERN_BUILD)/arch_%.o,$(KERN_ARCH_C))
 KERN_ARCH_S_OBJS := $(patsubst $(ARCH)/%.S,$(KERN_BUILD)/arch_%.o,$(KERN_ARCH_S))
 KERN_DRV_OBJS := $(KERN_BUILD)/drv_virtio_pci.o $(KERN_BUILD)/drv_virtio_blk.o
-KERN_ALL_OBJS := $(KERN_SRC_OBJS) $(KERN_ARCH_C_OBJS) $(KERN_ARCH_S_OBJS) $(KERN_DRV_OBJS)
+KERN_ALL_OBJS := $(KERN_SRC_OBJS) $(KERN_HAL_OBJS) $(KERN_ARCH_C_OBJS) $(KERN_ARCH_S_OBJS) $(KERN_DRV_OBJS)
 
 KERNEL_ELF := $(BUILD)/gmk_kernel.elf
 KERNEL_ISO := $(BUILD)/gmk.iso
@@ -107,8 +128,12 @@ all: lib
 
 lib: $(LIB)
 
-# ── Build object files (hosted) ─────────────────────────────
+# ── Build object files (hosted core) ─────────────────────────
 $(BUILD)/%.o: $(SRC)/%.c | $(BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# ── Build object files (hosted linux HAL) ────────────────────
+$(BUILD)/hal_linux_%.o: $(HAL_LINUX)/%.c | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD):
@@ -164,6 +189,10 @@ test-boot: $(BUILD)/test_boot
 
 # ── Kernel build (freestanding) ──────────────────────────────
 $(KERN_BUILD)/%.o: $(SRC)/%.c | $(KERN_BUILD)
+	$(KERN_CC) $(KERN_CFLAGS) -c $< -o $@
+
+# ── Kernel build (baremetal HAL) ─────────────────────────────
+$(KERN_BUILD)/hal_%.o: $(HAL_BM)/%.c | $(KERN_BUILD)
 	$(KERN_CC) $(KERN_CFLAGS) -c $< -o $@
 
 $(KERN_BUILD)/arch_%.o: $(ARCH)/%.c | $(KERN_BUILD)

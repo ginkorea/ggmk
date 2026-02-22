@@ -5,17 +5,7 @@
 #include "gmk/alloc.h"
 #include "gmk/trace.h"
 #include "gmk/metrics.h"
-
-#ifdef GMK_FREESTANDING
-#include "../../arch/x86_64/boot_alloc.h"
-#include "../../arch/x86_64/lapic.h"
-#include "../../arch/x86_64/serial.h"
-#else
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <errno.h>
-#endif
+#include "gmk/hal.h"
 
 static void worker_dispatch_task(gmk_worker_t *w, gmk_task_t *task) {
     gmk_ctx_t ctx = {
@@ -58,11 +48,7 @@ static void worker_dispatch_task(gmk_worker_t *w, gmk_task_t *task) {
     }
 }
 
-#ifdef GMK_FREESTANDING
 void *gmk_worker_loop(void *arg) {
-#else
-static void *worker_loop(void *arg) {
-#endif
     gmk_worker_t *w = (gmk_worker_t *)arg;
     gmk_task_t task;
 
@@ -117,25 +103,8 @@ static void *worker_loop(void *arg) {
                 gmk_trace_write(w->trace, 0, GMK_EV_WORKER_PARK,
                                0, w->id, 0);
 
-#ifdef GMK_FREESTANDING
-            /* Park: enable interrupts, HLT.
-             * LAPIC timer fires every ~1ms (= timeout).
-             * IPI from gmk_worker_wake() also wakes the CPU. */
-            __asm__ volatile("sti; hlt; cli");
-#else
-            pthread_mutex_lock(&w->park_mutex);
-            if (gmk_atomic_load(&w->running, memory_order_acquire)) {
-                struct timespec ts;
-                clock_gettime(CLOCK_REALTIME, &ts);
-                ts.tv_nsec += 1000000; /* 1ms timeout */
-                if (ts.tv_nsec >= 1000000000) {
-                    ts.tv_sec++;
-                    ts.tv_nsec -= 1000000000;
-                }
-                pthread_cond_timedwait(&w->park_cond, &w->park_mutex, &ts);
-            }
-            pthread_mutex_unlock(&w->park_mutex);
-#endif
+            if (gmk_atomic_load(&w->running, memory_order_acquire))
+                gmk_hal_park_wait(&w->park, 1000000); /* 1ms timeout */
 
             gmk_atomic_store(&w->parked, false, memory_order_release);
             if (w->metrics)
@@ -154,11 +123,7 @@ int gmk_worker_pool_init(gmk_worker_pool_t *pool, uint32_t n_workers,
     if (!pool || n_workers == 0 || !sched || !modules)
         return -1;
 
-#ifdef GMK_FREESTANDING
-    pool->workers = (gmk_worker_t *)boot_calloc(n_workers, sizeof(gmk_worker_t));
-#else
-    pool->workers   = (gmk_worker_t *)calloc(n_workers, sizeof(gmk_worker_t));
-#endif
+    pool->workers = (gmk_worker_t *)gmk_hal_calloc(n_workers, sizeof(gmk_worker_t));
     if (!pool->workers) return -1;
 
     pool->n_workers = n_workers;
@@ -184,10 +149,7 @@ int gmk_worker_pool_init(gmk_worker_pool_t *pool, uint32_t n_workers,
         atomic_init(&w->parked, false);
         atomic_init(&w->tasks_dispatched, 0);
         atomic_init(&w->tick, 0);
-#ifndef GMK_FREESTANDING
-        pthread_mutex_init(&w->park_mutex, NULL);
-        pthread_cond_init(&w->park_cond, NULL);
-#endif
+        gmk_hal_park_init(&w->park);
     }
 
     return 0;
@@ -199,18 +161,16 @@ int gmk_worker_pool_start(gmk_worker_pool_t *pool) {
     for (uint32_t i = 0; i < pool->n_workers; i++) {
         gmk_worker_t *w = &pool->workers[i];
         gmk_atomic_store(&w->running, true, memory_order_release);
-#ifndef GMK_FREESTANDING
-        if (pthread_create(&w->thread, NULL, (void *(*)(void *))worker_loop, w) != 0) {
+        if (gmk_hal_thread_create(&w->thread, gmk_worker_loop, w) != 0) {
             /* Stop already-started workers */
             for (uint32_t j = 0; j < i; j++) {
                 gmk_atomic_store(&pool->workers[j].running, false,
                                 memory_order_release);
                 gmk_worker_wake(&pool->workers[j]);
-                pthread_join(pool->workers[j].thread, NULL);
+                gmk_hal_thread_join(&pool->workers[j].thread);
             }
             return -1;
         }
-#endif
     }
     return 0;
 }
@@ -225,45 +185,25 @@ void gmk_worker_pool_stop(gmk_worker_pool_t *pool) {
     /* Wake all parked workers */
     gmk_worker_wake_all(pool);
 
-#ifndef GMK_FREESTANDING
     /* Join all threads */
     for (uint32_t i = 0; i < pool->n_workers; i++)
-        pthread_join(pool->workers[i].thread, NULL);
-#else
-    /* In freestanding mode, send wake IPIs and spin-wait for stopped */
-    for (volatile uint32_t delay = 0; delay < 1000000; delay++)
-        __asm__ volatile("pause");
-#endif
+        gmk_hal_thread_join(&pool->workers[i].thread);
 }
 
 void gmk_worker_pool_destroy(gmk_worker_pool_t *pool) {
     if (!pool) return;
     if (pool->workers) {
-#ifndef GMK_FREESTANDING
-        for (uint32_t i = 0; i < pool->n_workers; i++) {
-            pthread_mutex_destroy(&pool->workers[i].park_mutex);
-            pthread_cond_destroy(&pool->workers[i].park_cond);
-        }
-        free(pool->workers);
-#else
-        boot_free(pool->workers);
-#endif
+        for (uint32_t i = 0; i < pool->n_workers; i++)
+            gmk_hal_park_destroy(&pool->workers[i].park);
+        gmk_hal_free(pool->workers);
         pool->workers = NULL;
     }
 }
 
 void gmk_worker_wake(gmk_worker_t *w) {
     if (!w) return;
-#ifdef GMK_FREESTANDING
-    /* Send IPI to wake the halted CPU */
-    if (gmk_atomic_load(&w->parked, memory_order_acquire)) {
-        lapic_send_ipi(w->cpu_id, IPI_WAKE_VECTOR);
-    }
-#else
-    pthread_mutex_lock(&w->park_mutex);
-    pthread_cond_signal(&w->park_cond);
-    pthread_mutex_unlock(&w->park_mutex);
-#endif
+    if (gmk_atomic_load(&w->parked, memory_order_acquire))
+        gmk_hal_park_wake(&w->park);
 }
 
 void gmk_worker_wake_all(gmk_worker_pool_t *pool) {

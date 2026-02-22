@@ -4,9 +4,7 @@
  * Each bin is a slab allocator.
  */
 #include "gmk/alloc.h"
-#ifndef GMK_FREESTANDING
 #include <string.h>
-#endif
 
 static int bin_index(uint32_t size) {
     if (size <= GMK_BLOCK_MIN_SIZE) return 0;

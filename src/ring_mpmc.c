@@ -4,13 +4,7 @@
  * head/tail, checking the slot's sequence to ensure correctness.
  */
 #include "gmk/ring_mpmc.h"
-
-#ifdef GMK_FREESTANDING
-#include "../../arch/x86_64/boot_alloc.h"
-#else
-#include <stdlib.h>
-#include <string.h>
-#endif
+#include "gmk/hal.h"
 
 static inline uint32_t cell_stride(uint32_t elem_size) {
     /* cell = 4 bytes (seq) + elem_size, rounded up to 8-byte alignment */
@@ -32,13 +26,8 @@ int gmk_ring_mpmc_init(gmk_ring_mpmc_t *r, uint32_t cap, uint32_t elem_size) {
     r->cell_size = cell_stride(elem_size);
 
     size_t buf_bytes = (size_t)cap * r->cell_size;
-#ifdef GMK_FREESTANDING
-    r->buf = (uint8_t *)boot_aligned_alloc(GMK_CACHE_LINE, buf_bytes);
-#else
-    r->buf = (uint8_t *)aligned_alloc(GMK_CACHE_LINE, buf_bytes);
-#endif
+    r->buf = (uint8_t *)gmk_hal_page_alloc(buf_bytes, GMK_CACHE_LINE);
     if (!r->buf) return -1;
-    memset(r->buf, 0, buf_bytes);
 
     /* Initialize per-slot sequence numbers */
     for (uint32_t i = 0; i < cap; i++) {
@@ -65,7 +54,7 @@ int gmk_ring_mpmc_init_buf(gmk_ring_mpmc_t *r, uint32_t cap,
         return -1;
 
     r->buf = (uint8_t *)buf;
-    memset(r->buf, 0, (size_t)cap * r->cell_size);
+    gmk_hal_memset(r->buf, 0, (size_t)cap * r->cell_size);
 
     for (uint32_t i = 0; i < cap; i++) {
         gmk_mpmc_cell_t *c = cell_at(r, i);
@@ -79,11 +68,7 @@ int gmk_ring_mpmc_init_buf(gmk_ring_mpmc_t *r, uint32_t cap,
 
 void gmk_ring_mpmc_destroy(gmk_ring_mpmc_t *r) {
     if (r && r->buf) {
-#ifdef GMK_FREESTANDING
-        boot_free(r->buf);
-#else
-        free(r->buf);
-#endif
+        gmk_hal_page_free(r->buf, (size_t)r->cap * r->cell_size);
         r->buf = NULL;
     }
 }
@@ -114,7 +99,7 @@ int gmk_ring_mpmc_push(gmk_ring_mpmc_t *r, const void *elem) {
     }
 
     /* Write data and publish */
-    memcpy(c->data, elem, r->elem_size);
+    gmk_hal_memcpy(c->data, elem, r->elem_size);
     gmk_atomic_store(&c->seq, tail + 1, memory_order_release);
     return 0;
 }
@@ -145,7 +130,7 @@ int gmk_ring_mpmc_pop(gmk_ring_mpmc_t *r, void *elem) {
     }
 
     /* Read data and release slot */
-    memcpy(elem, c->data, r->elem_size);
+    gmk_hal_memcpy(elem, c->data, r->elem_size);
     gmk_atomic_store(&c->seq, head + r->cap, memory_order_release);
     return 0;
 }

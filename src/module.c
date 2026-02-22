@@ -4,9 +4,7 @@
 #include "gmk/module.h"
 #include "gmk/trace.h"
 #include "gmk/metrics.h"
-#ifndef GMK_FREESTANDING
 #include <string.h>
-#endif
 
 int gmk_module_reg_init(gmk_module_reg_t *mr, gmk_chan_reg_t *chan,
                         gmk_trace_t *trace, gmk_metrics_t *metrics) {

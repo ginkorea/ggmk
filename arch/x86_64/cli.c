@@ -163,7 +163,7 @@ static void cmd_cpu(int argc, char **argv) {
                                          memory_order_relaxed);
         bool parked = gmk_atomic_load(&w->parked, memory_order_relaxed);
         kprintf("  worker %u  LAPIC %u  dispatched %lu  %s\n",
-                i, w->cpu_id, (unsigned long)disp,
+                i, w->park.cpu_id, (unsigned long)disp,
                 parked ? "parked" : "active");
     }
 }

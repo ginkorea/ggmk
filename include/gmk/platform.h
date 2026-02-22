@@ -10,13 +10,6 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 
-#ifdef GMK_FREESTANDING
-#include "arch/string.h"
-#else
-#include <string.h>
-#include <time.h>
-#endif
-
 /* ── Cache line ──────────────────────────────────────────────── */
 #define GMK_CACHE_LINE 64
 
@@ -45,9 +38,7 @@ static inline uint64_t gmk_tsc(void) {
     __asm__ volatile("rdtsc" : "=a"(lo), "=d"(hi));
     return ((uint64_t)hi << 32) | lo;
 #else
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
+    return 0; /* HAL provides gmk_hal_now_ns() for portable time */
 #endif
 }
 

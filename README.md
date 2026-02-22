@@ -4,7 +4,7 @@ A system of peer microkernels spanning GPU and CPU. The GPU kernel (GMK/gpu) own
 
 ## Status
 
-**GMK/cpu v0.2** — the CPU-side microkernel — is implemented and tested as both a hosted library and a bootable bare-metal x86_64 kernel. The same source files compile in both modes via `#ifdef GMK_FREESTANDING` guards. The hosted build runs on Linux with pthreads; the bare-metal build boots via the Limine protocol and runs on real or emulated x86_64 hardware.
+**GMK/cpu v0.2** — the CPU-side microkernel — is implemented and tested as both a hosted library and a bootable bare-metal x86_64 kernel. The same core source files compile in both modes with zero platform guards — a Hardware Abstraction Layer (`include/gmk/hal.h`) is the single point of platform selection. The hosted build links the Linux HAL (pthreads, libc); the bare-metal build links the x86 baremetal HAL (spinlocks, LAPIC IPI, PMM) and boots via the Limine protocol.
 
 The bare-metal kernel now owns real peripherals: PCI bus enumeration, virtio-blk block device I/O, a virtual memory manager with demand paging and TLB shootdown, PIT-calibrated LAPIC timer, and IRQ-safe serial output. All 4 CPUs participate in work stealing with deterministic SMP synchronization.
 
@@ -47,7 +47,8 @@ GMK/gpu (GPU)                           GMK/cpu (CPU)
 | **Enqueue Core** | Single `_gmk_enqueue` path for all task routing. Cooperative yield with circuit breaker and overflow bucket. |
 | **Channels** | Up to 256 named channels. P2P fast-path, fan-out with shared payload, priority-aware backpressure, dead-letter routing. |
 | **Modules** | Function pointer dispatch table indexed by type ID. Poison detection via failure threshold. |
-| **Workers** | N worker loops running gather-dispatch-park. Hosted: pthreads + `pthread_cond_timedwait`. Bare-metal: per-CPU `sti;hlt;cli` + LAPIC IPI wake. |
+| **Workers** | N worker loops running gather-dispatch-park. Platform-specific parking/waking delegated to HAL (Linux: condvar; bare-metal: `sti;hlt;cli` + LAPIC IPI). |
+| **HAL** | Hardware Abstraction Layer. One `#ifdef` in `hal.h` selects platform types. Linux HAL: pthreads, libc, clock_gettime. Baremetal HAL: spinlocks, LAPIC IPI, PMM, boot allocator. |
 | **Boot** | `gmk_boot` initializes arena → scheduler → channels → modules → workers. `gmk_halt` tears down in reverse. |
 | **PCI** | Legacy I/O port (0xCF8/0xCFC) bus 0 enumeration with multi-function support. BAR decode, device lookup by vendor/device ID. |
 | **VMM** | Kernel heap (128 MB virtual range) with bump allocator, demand paging via page fault handler, and cross-CPU TLB shootdown via IPI. |
@@ -67,25 +68,58 @@ Limine → _kstart → serial(COM1, IRQ-safe lock) → GDT → IDT(256 vectors)
        → kmain → virtio-blk init → gmk_boot → worker loops
 ```
 
-### Platform Abstraction
+### HAL (Hardware Abstraction Layer)
 
-| Primitive | Hosted | Bare-Metal |
-|-----------|--------|------------|
-| Lock | `pthread_mutex` | Ticket spinlock (IRQ-safe in serial) |
-| Worker park | `pthread_cond_timedwait` (1ms) | `sti; hlt; cli` (LAPIC timer wakes) |
-| Worker wake | `pthread_cond_signal` | `lapic_send_ipi(cpu_id, 0xFE)` |
-| Arena memory | `aligned_alloc` | PMM page allocation via HHDM |
-| Kernel heap | `calloc` / `free` | VMM bump allocator + demand paging |
-| Kernel objects | `calloc` / `free` | Boot bump allocator (never frees) |
-| Block I/O | — | Virtio-blk via PCI legacy transport |
-| Timer calibration | — | PIT channel 2 → LAPIC ticks/ms |
-| TLB management | — | `invlpg` + IPI 0xFD shootdown |
-| Crash reporting | `abort()` | `PANIC()` → serial dump + halt |
-| Strings | `<string.h>` | Freestanding `memset`/`memcpy`/`memmove` |
+Core source files (`src/`, `include/gmk/`) contain zero `#ifdef GMK_FREESTANDING` guards. All platform differences are isolated behind `include/gmk/hal.h`, which selects the appropriate HAL implementation at compile time.
+
+| HAL Function | Linux HAL (`hal/linux/`) | Baremetal HAL (`hal/x86_baremetal/`) |
+|--------------|--------------------------|--------------------------------------|
+| `gmk_hal_lock_*` | `pthread_mutex` | Ticket spinlock |
+| `gmk_hal_park_wait` | `pthread_cond_timedwait` (CLOCK_MONOTONIC, 1ms) | `sti; hlt; cli` (LAPIC timer wakes) |
+| `gmk_hal_park_wake` | `pthread_cond_signal` | `lapic_send_ipi(cpu_id, 0xFE)` |
+| `gmk_hal_thread_create` | `pthread_create` | no-op (APs pre-started by SMP) |
+| `gmk_hal_page_alloc` | `aligned_alloc` + memset | PMM page allocation via HHDM |
+| `gmk_hal_calloc` | `calloc` | Boot bump allocator (never frees) |
+| `gmk_hal_now_ns` | `clock_gettime(MONOTONIC_RAW)` | `idt_get_timer_count() * 1000000` |
+| `gmk_hal_memset/memcpy` | libc | arch `memops.c` |
+
+Additional bare-metal platform features (not behind HAL):
+
+| Primitive | Implementation |
+|-----------|---------------|
+| Block I/O | Virtio-blk via PCI legacy transport |
+| Timer calibration | PIT channel 2 → LAPIC ticks/ms |
+| TLB management | `invlpg` + IPI 0xFD shootdown |
+| Crash reporting | `PANIC()` → serial dump + halt |
+| Kernel heap | VMM bump allocator + demand paging |
 
 ### File Layout
 
 ```
+include/gmk/
+  hal.h            HAL API — the ONE #ifdef selecting platform types
+  lock.h           gmk_lock_t (delegates to HAL)
+  worker.h         worker pool (uses HAL thread/park types)
+  platform.h       cache line, atomics, power-of-two helpers
+  types.h          gmk_task_t, gmk_ctx_t, gmk_module_t
+  ...              (alloc.h, boot.h, chan.h, error.h, sched.h, etc.)
+
+hal/linux/
+  hal_types.h      pthread-based type definitions
+  thread.c         pthread_create/join
+  lock.c           pthread_mutex
+  park.c           condvar (CLOCK_MONOTONIC)
+  time.c           clock_gettime(MONOTONIC_RAW)
+  mem.c            aligned_alloc, calloc, free, memset, memcpy
+
+hal/x86_baremetal/
+  hal_types.h      spinlock/cpu_id type definitions
+  thread.c         no-op (APs pre-started by SMP)
+  lock.c           ticket spinlock
+  park.c           sti;hlt;cli + LAPIC IPI
+  time.c           LAPIC timer tick count
+  mem.c            PMM page alloc, boot bump allocator
+
 arch/x86_64/
   entry.c          _kstart + Limine request structs
   kmain.c          kernel main, test echo handler, smoke tests
@@ -99,7 +133,7 @@ arch/x86_64/
   pci.c/.h         PCI bus 0 enumeration via I/O ports 0xCF8/0xCFC
   mem.h            phys_to_virt / virt_to_phys
   boot_alloc.c/.h  boot-time bump allocator
-  memops.c         freestanding memset/memcpy/memmove/memcmp
+  memops.c         freestanding memset/memcpy/memmove/memcmp/strncpy/strncmp
   lapic.c/.h       LAPIC init, PIT-calibrated timer, EOI, IPI
   smp.c/.h         SMP bringup via Limine goto_address
   ctx_switch.S     callee-saved register + RSP swap

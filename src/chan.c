@@ -12,9 +12,7 @@
 #include "gmk/alloc.h"
 #include "gmk/trace.h"
 #include "gmk/metrics.h"
-#ifndef GMK_FREESTANDING
 #include <string.h>
-#endif
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 

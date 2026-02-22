@@ -79,7 +79,7 @@ static void ap_worker_entry(void *arg) {
     uint32_t my_lapic = lapic_id();
     gmk_worker_t *w = 0;
     for (uint32_t i = 0; i < kernel.pool.n_workers; i++) {
-        if (kernel.pool.workers[i].cpu_id == my_lapic) {
+        if (kernel.pool.workers[i].park.cpu_id == my_lapic) {
             w = &kernel.pool.workers[i];
             break;
         }
@@ -169,9 +169,9 @@ void kmain(uint32_t cpu_count) {
     }
 
     /* Assign LAPIC IDs to workers for IPI wake */
-    kernel.pool.workers[0].cpu_id = smp_bsp_lapic_id();
+    kernel.pool.workers[0].park.cpu_id = smp_bsp_lapic_id();
     for (uint32_t i = 1; i < cfg.n_workers; i++) {
-        kernel.pool.workers[i].cpu_id = smp_lapic_id(i);
+        kernel.pool.workers[i].park.cpu_id = smp_lapic_id(i);
     }
 
     /* Start APs first so they're in worker loops before tasks arrive */

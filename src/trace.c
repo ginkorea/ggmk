@@ -4,9 +4,7 @@
  * Sampling uses fixed-point uint32_t threshold (no floating point).
  */
 #include "gmk/trace.h"
-#ifndef GMK_FREESTANDING
 #include <string.h>
-#endif
 
 /* Fast xorshift PRNG */
 static inline uint32_t prng_next(uint32_t *state) {

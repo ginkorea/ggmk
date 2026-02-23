@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Linux HAL: time (clock_gettime wrapper)
+ * GGMK/cpu — Linux HAL: time (clock_gettime wrapper)
  */
-#include "gmk/hal.h"
+#include "ggmk/hal.h"
 #include <time.h>
 
 uint64_t gmk_hal_now_ns(void) {

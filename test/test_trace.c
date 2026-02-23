@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Trace tests
+ * GGMK/cpu — Trace tests
  */
-#include "gmk/trace.h"
+#include "ggmk/trace.h"
 #include "test_util.h"
 
 static void test_basic_write_read(void) {

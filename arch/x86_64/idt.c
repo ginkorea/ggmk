@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — IDT: 256 entries, exception handlers, IRQ stubs
+ * GGMK/cpu — IDT: 256 entries, exception handlers, IRQ stubs
  */
 #include "idt.h"
 #include "lapic.h"

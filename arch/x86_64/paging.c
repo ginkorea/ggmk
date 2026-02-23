@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Page table manipulation
+ * GGMK/cpu — Page table manipulation
  *
  * Provides 4KB page mapping/unmapping using the existing 4-level page tables
  * set up by Limine. Limine's HHDM only covers physical RAM; MMIO regions

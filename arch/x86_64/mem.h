@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — HHDM physical/virtual address helpers
+ * GGMK/cpu — HHDM physical/virtual address helpers
  */
 #ifndef GMK_MEM_H
 #define GMK_MEM_H

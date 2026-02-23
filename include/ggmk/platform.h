@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Platform abstractions
+ * GGMK/cpu — Platform abstractions
  * Cache line size, atomics, TSC, alignment macros.
  */
 #ifndef GMK_PLATFORM_H

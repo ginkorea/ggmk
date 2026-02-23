@@ -1,11 +1,11 @@
 /*
- * GMK/cpu — Worker thread loop (gather-dispatch-park)
+ * GGMK/cpu — Worker thread loop (gather-dispatch-park)
  */
-#include "gmk/worker.h"
-#include "gmk/alloc.h"
-#include "gmk/trace.h"
-#include "gmk/metrics.h"
-#include "gmk/hal.h"
+#include "ggmk/worker.h"
+#include "ggmk/alloc.h"
+#include "ggmk/trace.h"
+#include "ggmk/metrics.h"
+#include "ggmk/hal.h"
 
 static void worker_dispatch_task(gmk_worker_t *w, gmk_task_t *task) {
     gmk_ctx_t ctx = {

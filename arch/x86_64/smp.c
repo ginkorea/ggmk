@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — SMP bringup via Limine
+ * GGMK/cpu — SMP bringup via Limine
  */
 #include "smp.h"
 #include "gdt.h"
@@ -9,8 +9,8 @@
 #include "mem.h"
 #include "boot_alloc.h"
 #include "limine/limine.h"
-#include "../../include/gmk/error.h"
-#include "../../include/gmk/arch/thread.h"
+#include "../../include/ggmk/error.h"
+#include "../../include/ggmk/arch/thread.h"
 
 static struct limine_smp_response *smp_resp;
 static uint32_t cpu_count;

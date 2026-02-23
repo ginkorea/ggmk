@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — x86 bare-metal HAL: lock (spinlock wrappers)
+ * GGMK/cpu — x86 bare-metal HAL: lock (spinlock wrappers)
  */
-#include "gmk/hal.h"
+#include "ggmk/hal.h"
 
 void gmk_hal_lock_init(gmk_hal_lock_t *l) {
     gmk_spinlock_init(&l->s);

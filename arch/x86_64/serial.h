@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — COM1 serial I/O
+ * GGMK/cpu — COM1 serial I/O
  */
 #ifndef GMK_SERIAL_H
 #define GMK_SERIAL_H

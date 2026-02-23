@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Test utilities
+ * GGMK/cpu — Test utilities
  * Assertion macros and test harness helpers.
  */
 #ifndef GMK_TEST_UTIL_H

@@ -1,12 +1,12 @@
 /*
- * GMK/cpu — COM1 serial output (115200 8N1)
+ * GGMK/cpu — COM1 serial output (115200 8N1)
  *
  * serial_putc/serial_puts: unlocked, safe only in early boot or
  * when caller already holds the serial lock.
  * kprintf: IRQ-safe (disables interrupts while holding lock).
  */
 #include "serial.h"
-#include "../../include/gmk/arch/spinlock.h"
+#include "../../include/ggmk/arch/spinlock.h"
 
 #define COM1 0x3F8
 

@@ -1,10 +1,10 @@
 /*
- * GMK/cpu — Ready Queue: 4 priority sub-queues with weighted pop
+ * GGMK/cpu — Ready Queue: 4 priority sub-queues with weighted pop
  *
  * Weights: P0=8, P1=4, P2=2, P3=1.
  * Each weight-batch pops that many tasks before moving to the next priority.
  */
-#include "gmk/sched.h"
+#include "ggmk/sched.h"
 #include <string.h>
 
 int gmk_rq_init(gmk_rq_t *rq, uint32_t cap_per_queue) {

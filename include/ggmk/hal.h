@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Hardware Abstraction Layer
+ * GGMK/cpu — Hardware Abstraction Layer
  *
  * Platform-neutral API. The ONLY file in core that selects a platform.
  * Core compiles anywhere. HAL is "the current planet."

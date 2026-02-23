@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Ticket spinlock for freestanding mode
+ * GGMK/cpu — Ticket spinlock for freestanding mode
  */
 #ifndef GMK_ARCH_SPINLOCK_H
 #define GMK_ARCH_SPINLOCK_H

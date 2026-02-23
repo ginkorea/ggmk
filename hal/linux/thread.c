@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Linux HAL: thread (pthread wrappers)
+ * GGMK/cpu — Linux HAL: thread (pthread wrappers)
  */
-#include "gmk/hal.h"
+#include "ggmk/hal.h"
 #include <pthread.h>
 
 int gmk_hal_thread_create(gmk_hal_thread_t *t, void *(*fn)(void *), void *arg) {

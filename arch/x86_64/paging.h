@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Page table manipulation
+ * GGMK/cpu — Page table manipulation
  */
 #ifndef GMK_PAGING_H
 #define GMK_PAGING_H

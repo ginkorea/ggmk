@@ -1,10 +1,10 @@
 /*
- * GMK/cpu — x86 bare-metal HAL: memory
+ * GGMK/cpu — x86 bare-metal HAL: memory
  *
  * page_alloc/page_free: PMM (physical page allocator) — for arenas, ring buffers.
  * calloc/free: boot bump allocator — for small kernel-lifetime objects.
  */
-#include "gmk/hal.h"
+#include "ggmk/hal.h"
 #include "../../arch/x86_64/boot_alloc.h"
 #include "../../arch/x86_64/pmm.h"
 #include "../../arch/x86_64/mem.h"

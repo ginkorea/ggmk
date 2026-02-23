@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Virtual Memory Manager
+ * GGMK/cpu — Virtual Memory Manager
  *
  * Simple bump-allocator kernel heap with demand paging.
  * Pages are not mapped until first access triggers a page fault.
@@ -11,7 +11,7 @@
 #include "mem.h"
 #include "lapic.h"
 #include "serial.h"
-#include "../../include/gmk/arch/spinlock.h"
+#include "../../include/ggmk/arch/spinlock.h"
 #include <stdatomic.h>
 
 /* ── Heap state ──────────────────────────────────────────────────── */

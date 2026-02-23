@@ -1,8 +1,8 @@
 /*
- * GMK/cpu — Bump allocator (atomic offset)
+ * GGMK/cpu — Bump allocator (atomic offset)
  * Fast, lock-free. Reset sets offset to 0.
  */
-#include "gmk/alloc.h"
+#include "ggmk/alloc.h"
 
 int gmk_bump_init(gmk_bump_t *b, void *mem, size_t mem_size) {
     if (!b || !mem || mem_size == 0) return -1;

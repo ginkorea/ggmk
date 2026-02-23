@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — memset/memcpy/memmove symbol definitions for freestanding
+ * GGMK/cpu — memset/memcpy/memmove symbol definitions for freestanding
  *
  * GCC/Clang emit calls to these even without explicit use (struct copies,
  * zero-init, etc.). Must provide symbols in freestanding mode.

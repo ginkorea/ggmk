@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Channel registry + P2P/fan-out
+ * GGMK/cpu — Channel registry + P2P/fan-out
  *
  * Up to 256 channels. ID 0 = direct submit, ID 1 = "sys.dropped".
  * Per channel: MPMC ring buffer, subscriber list, mode, guarantee.

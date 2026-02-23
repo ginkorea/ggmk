@@ -1,10 +1,10 @@
 /*
- * GMK/cpu — MPMC ring buffer implementation (Vyukov bounded queue)
+ * GGMK/cpu — MPMC ring buffer implementation (Vyukov bounded queue)
  * Each slot has a sequence number. Producers and consumers use CAS on
  * head/tail, checking the slot's sequence to ensure correctness.
  */
-#include "gmk/ring_mpmc.h"
-#include "gmk/hal.h"
+#include "ggmk/ring_mpmc.h"
+#include "ggmk/hal.h"
 
 static inline uint32_t cell_stride(uint32_t elem_size) {
     /* cell = 4 bytes (seq) + elem_size, rounded up to 8-byte alignment */

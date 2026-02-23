@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Atomic metric counters
+ * GGMK/cpu — Atomic metric counters
  */
-#include "gmk/metrics.h"
+#include "ggmk/metrics.h"
 #include <string.h>
 
 int gmk_metrics_init(gmk_metrics_t *m, uint32_t n_tenants) {

@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Boot-time bump allocator for kernel-lifetime objects
+ * GGMK/cpu — Boot-time bump allocator for kernel-lifetime objects
  *
  * Never frees. Initialized with a region carved from PMM.
  * Used in freestanding mode for all calloc/aligned_alloc calls during boot.

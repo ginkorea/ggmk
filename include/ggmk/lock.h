@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Lock abstraction (delegates to HAL)
+ * GGMK/cpu — Lock abstraction (delegates to HAL)
  */
 #ifndef GMK_LOCK_H
 #define GMK_LOCK_H

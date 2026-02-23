@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — MPMC ring buffer tests (concurrent correctness)
+ * GGMK/cpu — MPMC ring buffer tests (concurrent correctness)
  */
-#include "gmk/ring_mpmc.h"
+#include "ggmk/ring_mpmc.h"
 #include "test_util.h"
 #include <pthread.h>
 

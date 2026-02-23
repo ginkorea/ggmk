@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — GDT setup
+ * GGMK/cpu — GDT setup
  */
 #ifndef GMK_GDT_H
 #define GMK_GDT_H

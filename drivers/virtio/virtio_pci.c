@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Virtio-PCI legacy transport
+ * GGMK/cpu — Virtio-PCI legacy transport
  *
  * Legacy virtio uses I/O BAR (BAR0) for device registers.
  * Register layout (offsets from BAR0):

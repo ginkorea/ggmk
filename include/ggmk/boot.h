@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Kernel boot/halt + gmk_kernel_t
+ * GGMK/cpu — Kernel boot/halt + gmk_kernel_t
  *
  * gmk_boot: init arena → init sched → init channels → register modules
  *           → init modules → start workers.

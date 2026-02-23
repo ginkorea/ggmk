@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Context switch: save/restore callee-saved registers + rsp
+ * GGMK/cpu — Context switch: save/restore callee-saved registers + rsp
  *
  * void gmk_ctx_switch(gmk_cpu_ctx_t *old, gmk_cpu_ctx_t *new);
  *

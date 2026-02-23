@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Core type definitions
+ * GGMK/cpu — Core type definitions
  * gmk_task_t, gmk_ctx_t, gmk_module_t, handler/channel declarations
  */
 #ifndef GMK_TYPES_H

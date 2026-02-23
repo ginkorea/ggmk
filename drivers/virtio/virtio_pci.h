@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Virtio-PCI legacy transport (I/O BAR)
+ * GGMK/cpu — Virtio-PCI legacy transport (I/O BAR)
  */
 #ifndef GMK_VIRTIO_PCI_H
 #define GMK_VIRTIO_PCI_H

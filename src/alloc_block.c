@@ -1,9 +1,9 @@
 /*
- * GMK/cpu — Power-of-two bin allocator
+ * GGMK/cpu — Power-of-two bin allocator
  * 12 bins: 32, 64, 128, 256, 512, 1K, 2K, 4K, 8K, 16K, 32K, 64K.
  * Each bin is a slab allocator.
  */
-#include "gmk/alloc.h"
+#include "ggmk/alloc.h"
 #include <string.h>
 
 static int bin_index(uint32_t size) {

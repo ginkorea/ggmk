@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Atomic metric counters
+ * GGMK/cpu — Atomic metric counters
  *
  * Per-tenant + global atomic counters.
  * Unconditional — never gated by trace level or sampling.

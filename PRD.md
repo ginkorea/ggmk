@@ -1,6 +1,6 @@
-# GMK — GPU Microkernel v0.1
+# GGMK — Gompert Gompert GPU Microkernel v0.1
 
-A system of microkernels spanning GPU and CPU. The GPU kernel (GMK/gpu) owns compute: scheduling, memory, channels, and module dispatch via persistent CUDA kernels. The CPU kernel (GMK/cpu) owns peripherals: NIC, NVMe, DMA, and the GPU driver interface. Both kernels share the same architectural primitives — tasks, channels, modules, allocators, and observability. They communicate through cross-kernel channels over PCIe DMA. Neither is subordinate. Together they are GMK.
+A system of microkernels spanning GPU and CPU. The GPU kernel (GGMK/gpu) owns compute: scheduling, memory, channels, and module dispatch via persistent CUDA kernels. The CPU kernel (GGMK/cpu) owns peripherals: NIC, NVMe, DMA, and the GPU driver interface. Both kernels share the same architectural primitives — tasks, channels, modules, allocators, and observability. They communicate through cross-kernel channels over PCIe DMA. Neither is subordinate. Together they are GGMK.
 
 ---
 
@@ -10,7 +10,7 @@ Six principles. These are not aspirations — they are constraints that resolve 
 
 ### Everything is a task.
 
-One unit of work. One scheduling primitive. One mental model. A task can represent a simulation tick, a key-value lookup, a log write, a channel message delivery. There is no second concept for "work." This is GMK's equivalent of Unix's "everything is a file" — a simplifying axiom that makes the system composable. When in doubt, make it a task.
+One unit of work. One scheduling primitive. One mental model. A task can represent a simulation tick, a key-value lookup, a log write, a channel message delivery. There is no second concept for "work." This is GGMK's equivalent of Unix's "everything is a file" — a simplifying axiom that makes the system composable. When in doubt, make it a task.
 
 ### Channels are the composition primitive.
 
@@ -34,7 +34,7 @@ This is not Unix on a GPU. The SIMT execution model, the memory hierarchy, the a
 
 ### One system, many kernels.
 
-GMK is not a GPU kernel with a host helper. It is a system of peer microkernels. GMK/gpu runs on the GPU. GMK/cpu runs on the CPU. Each has its own scheduler, allocator, modules, and channels. They communicate through cross-kernel channels — same abstraction, different transport. A module does not know which kernel its channel partner lives on. When hardware changes — a second GPU, a remote node, GPUDirect bypassing the CPU — the module code does not change. Only the channel transport does.
+GGMK is not a GPU kernel with a host helper. It is a system of peer microkernels. GGMK/gpu runs on the GPU. GGMK/cpu runs on the CPU. Each has its own scheduler, allocator, modules, and channels. They communicate through cross-kernel channels — same abstraction, different transport. A module does not know which kernel its channel partner lives on. When hardware changes — a second GPU, a remote node, GPUDirect bypassing the CPU — the module code does not change. Only the channel transport does.
 
 ---
 
@@ -42,7 +42,7 @@ GMK is not a GPU kernel with a host helper. It is a system of peer microkernels.
 
 ### Goals
 
-* **System of peer microkernels**: GMK/gpu owns compute (scheduling, memory, channels, dispatch). GMK/cpu owns peripherals (NIC, NVMe, DMA, GPU driver interface). Both share the same architectural primitives.
+* **System of peer microkernels**: GGMK/gpu owns compute (scheduling, memory, channels, dispatch). GGMK/cpu owns peripherals (NIC, NVMe, DMA, GPU driver interface). Both share the same architectural primitives.
 * **GPU-resident ownership** of task scheduling, memory allocation, channel delivery, module dispatch, and observability within the GPU kernel.
 * **Persistent execution**: GPU kernel(s) stay resident; no per-task host launches.
 * **Cross-kernel channels**: same channel abstraction spans GPU↔CPU, with transport determined by topology, not by module code.
@@ -68,15 +68,15 @@ GMK is not a GPU kernel with a host helper. It is a system of peer microkernels.
 
 ### Components
 
-GMK is a system of two peer microkernels:
+GGMK is a system of two peer microkernels:
 
-**GMK/gpu** — the GPU-resident compute kernel:
+**GGMK/gpu** — the GPU-resident compute kernel:
 1. **Persistent Kernel**: worker block loops, never exits.
 2. **HBM State**: queues, allocators, channel registry, module registry, metrics, trace buffers.
 3. **GPU Modules**: device code containing task handlers registered at init.
 4. **GPU Channels**: named, typed, parallel communication paths (ring buffers in HBM).
 
-**GMK/cpu** — the CPU-resident peripheral kernel:
+**GGMK/cpu** — the CPU-resident peripheral kernel:
 1. **CPU Workers**: threads running the same gather-dispatch loop as GPU workers (adapted for CPU).
 2. **Host Memory State**: queues, allocators, channel registry, module registry, metrics, trace buffers — mirrored structure in host memory.
 3. **CPU Modules**: host code handling I/O, DMA, and hardware peripherals.
@@ -84,10 +84,10 @@ GMK is a system of two peer microkernels:
 
 **Cross-kernel infrastructure**:
 1. **Bridge Channels**: channels whose producer and consumer live on different kernels. Transport is PCIe DMA. Same semantics as local channels.
-2. **Boot Orchestrator**: runs on CPU, discovers hardware, boots GMK/cpu, then boots GMK/gpu via the `gpu_drv` module.
+2. **Boot Orchestrator**: runs on CPU, discovers hardware, boots GGMK/cpu, then boots GGMK/gpu via the `gpu_drv` module.
 
 ```
-GMK/gpu (GPU)                           GMK/cpu (CPU)
+GGMK/gpu (GPU)                           GGMK/cpu (CPU)
 ┌───────────────────────────┐          ┌───────────────────────────┐
 │ Worker Blocks [0..N-1]    │          │ Worker Threads [0..M-1]   │
 │   gather → dispatch → emit│          │   gather → dispatch → emit│
@@ -110,7 +110,7 @@ GMK/gpu (GPU)                           GMK/cpu (CPU)
                                        │   nic      (network I/O)
                                        │   nvme     (storage I/O)
                                        │   watchdog (heartbeat monitor)
-                                       │   cli      (gmk shell)
+                                       │   cli      (ggmk shell)
                                        └───────────────────────────
 ```
 
@@ -120,7 +120,7 @@ Each microkernel instance has a unique identity:
 
 * **Kernel ID**: `gpu.0`, `cpu.0`, `gpu.1`, etc.
 * **Role**: `compute` (GPU) or `peripheral` (CPU).
-* **Discovery**: at boot, GMK/cpu starts first, enumerates hardware, then boots each GMK/gpu via the `gpu_drv` module. Kernel IDs are assigned at discovery time.
+* **Discovery**: at boot, GGMK/cpu starts first, enumerates hardware, then boots each GGMK/gpu via the `gpu_drv` module. Kernel IDs are assigned at discovery time.
 
 In v0.1, exactly two kernels: `gpu.0` and `cpu.0`. Multi-GPU (`gpu.0`, `gpu.1`, ...) and multi-node (`cpu.0@host0`, `cpu.0@host1`) are v0.3.
 
@@ -177,7 +177,7 @@ When a module emits a task on channel `"sim.tick"`:
 * **HBM_CHANNEL**: ring buffers backing GPU-local channels and the GPU side of bridge channels. Separate from arena memory — channel buffers persist for the lifetime of the channel, not the task or tick.
 * **HBM_BRIDGE_ALLOC**: reserved pool for payloads arriving from CPU→GPU bridge transfers. `gpu_drv` allocates from this pool when marshaling incoming payloads into HBM.
 * **PINNED_HOST**: pinned host buffers used **exclusively** as DMA staging areas by `gpu_drv` for bridge channel transfers. No GPU-local queue or channel touches pinned memory. GPU scheduling (GRQ, LQs, EVQ) runs entirely in HBM.
-* **HOST_ARENA[n]**: GMK/cpu's local memory arenas for CPU-side allocations and CPU-local channel ring buffers.
+* **HOST_ARENA[n]**: GGMK/cpu's local memory arenas for CPU-side allocations and CPU-local channel ring buffers.
 
 ### Allocators
 
@@ -264,33 +264,33 @@ A single `switch` over all handler types means `nvcc` sees every code path and a
 
 The fix: the build system marks register-heavy handlers with `__noinline__`. This forces the compiler to isolate their register pressure behind a function call boundary. The call overhead is negligible (one instruction); the occupancy gain is massive.
 
-The build system applies this automatically based on a configurable threshold (`GMK_INLINE_REG_LIMIT`, default 32). Handlers whose standalone register count exceeds the threshold are emitted as `__noinline__` in the generated dispatch code. Handlers below the threshold remain inlinable. The `gmk build` output reports per-handler register counts so developers can tune this:
+The build system applies this automatically based on a configurable threshold (`GMK_INLINE_REG_LIMIT`, default 32). Handlers whose standalone register count exceeds the threshold are emitted as `__noinline__` in the generated dispatch code. Handlers below the threshold remain inlinable. The `ggmk build` output reports per-handler register counts so developers can tune this:
 
 ```
-$ gmk build --kernel
+$ ggmk build --kernel
   handler kv_put:      16 regs (inline)
   handler kv_get:      14 regs (inline)
   handler phys_step:   96 regs (__noinline__)
   handler ai_forward: 112 regs (__noinline__)
-Built: gmk.cubin (8 modules, 23 handlers, max_inline_regs=32)
+Built: ggmk.cubin (8 modules, 23 handlers, max_inline_regs=32)
   lmem: 0B (clean)
   shared_mem: max=32768B (ai_forward), blocks/SM: 2
 ```
 
 ### Local Memory Detection
 
-Register spilling to local memory (a private slice of HBM) is a silent performance catastrophe — every spilled variable access becomes a ~400-cycle round trip. The build system parses `ptxas` output during `gmk build --kernel`. If any handler reports nonzero "Stack frame" or "Lmem" usage, the build emits a warning. If the spill exceeds `GMK_MAX_LMEM_BYTES` (default 0 = fail on any spill), the build fails. This forces developers to reduce register pressure (simplify the handler, split into phases with yield, or mark as `__noinline__`) rather than silently accepting a 10x throughput collapse.
+Register spilling to local memory (a private slice of HBM) is a silent performance catastrophe — every spilled variable access becomes a ~400-cycle round trip. The build system parses `ptxas` output during `ggmk build --kernel`. If any handler reports nonzero "Stack frame" or "Lmem" usage, the build emits a warning. If the spill exceeds `GMK_MAX_LMEM_BYTES` (default 0 = fail on any spill), the build fails. This forces developers to reduce register pressure (simplify the handler, split into phases with yield, or mark as `__noinline__`) rather than silently accepting a 10x throughput collapse.
 
 ### Shared Memory Budget
 
 Persistent worker blocks cannot resize `__shared__` memory after launch. The build system computes the shared memory allocation as `max(shared_bytes)` across all registered handlers. If a handler declares `shared_bytes = 32768` and all others declare 0, every worker block gets 32KB of shared memory — reducing the number of concurrent blocks per SM.
 
-To mitigate this, handlers with high shared memory requirements should be flagged `GMK_HF_BLOCK` and the scheduler can optionally **dedicate specific worker blocks** to high-SRAM handler types (configured via `gmk boot --dedicated-workers TYPE=N`). Dedicated workers only pull from that type's GRQ bucket, and can be launched with a different shared memory configuration. Non-dedicated workers use the default (smaller) shared memory allocation and are unaffected.
+To mitigate this, handlers with high shared memory requirements should be flagged `GMK_HF_BLOCK` and the scheduler can optionally **dedicate specific worker blocks** to high-SRAM handler types (configured via `ggmk boot --dedicated-workers TYPE=N`). Dedicated workers only pull from that type's GRQ bucket, and can be launched with a different shared memory configuration. Non-dedicated workers use the default (smaller) shared memory allocation and are unaffected.
 
 The build system reports per-handler shared memory usage and the computed block-level allocation:
 
 ```
-$ gmk build --kernel
+$ ggmk build --kernel
   ...
   shared_mem: kv_put=0B  phys_step=16384B  ai_forward=32768B
   worker shared_mem: 32768B (limited by ai_forward)
@@ -501,7 +501,7 @@ typedef struct {
 } gmk_chan_decl_t;
 ```
 
-GMK/cpu validates all channel declarations at boot: type mismatches between producers and consumers are a boot-time error, not a runtime surprise.
+GGMK/cpu validates all channel declarations at boot: type mismatches between producers and consumers are a boot-time error, not a runtime surprise.
 
 ### Module Lifecycle
 
@@ -533,7 +533,7 @@ GMK_MODULE(mymod) = {
 
 ### Concept
 
-A channel is a named, typed, parallel communication path between modules. Channels are the primary composition mechanism in GMK.
+A channel is a named, typed, parallel communication path between modules. Channels are the primary composition mechanism in GGMK.
 
 * **Named**: string names like `"sim.tick"`, `"kv.put"`, `"log.entry"`. Resolved to uint32 IDs at registration.
 * **Typed**: each channel carries tasks of a specific handler type. Type mismatches caught at boot (static declarations) or runtime (dynamic opens).
@@ -586,7 +586,7 @@ For fan-out channels, the payload is shared read-only across multiple subscriber
 
 This ensures no use-after-free and no leaks, even under partial delivery.
 
-**Retaining payloads beyond handler scope**: if a handler needs to store a `payload_ptr` into persistent state (e.g., KV or module-private memory), it must call `gmk_payload_retain(ctx)` before returning. This increments the ref-count, preventing the SDK's auto-release from freeing the payload. The handler (or its module) is then responsible for calling `gmk_payload_release(ctx)` later when the stored pointer is no longer needed. Failing to retain before stashing a pointer is a use-after-free bug; the build system's test harness (`gmk test`) detects this via a debug-mode canary that poisons freed payloads.
+**Retaining payloads beyond handler scope**: if a handler needs to store a `payload_ptr` into persistent state (e.g., KV or module-private memory), it must call `gmk_payload_retain(ctx)` before returning. This increments the ref-count, preventing the SDK's auto-release from freeing the payload. The handler (or its module) is then responsible for calling `gmk_payload_release(ctx)` later when the stored pointer is no longer needed. Failing to retain before stashing a pointer is a use-after-free bug; the build system's test harness (`ggmk test`) detects this via a debug-mode canary that poisons freed payloads.
 
 ### Dead-Letter Channel
 
@@ -626,11 +626,11 @@ Dot-separated: `"namespace.verb"`.
 * CPU modules: `"net.rx"`, `"net.tx"`, `"disk.read"`, `"disk.write"`, `"cli.cmd"`
 * User: `"sim.step"`, `"ml.batch"`, `"data.ingest"`
 
-Channel names are global across the system. A channel named `"sim.results"` is the same channel whether accessed from GMK/gpu or GMK/cpu. The channel registry resolves locality.
+Channel names are global across the system. A channel named `"sim.results"` is the same channel whether accessed from GGMK/gpu or GGMK/cpu. The channel registry resolves locality.
 
 ### Cross-Kernel Channels
 
-Every channel between GMK/gpu and GMK/cpu is a bridge channel. The legacy names `"host.rx"` and `"host.tx"` are retained as the default bridge pair:
+Every channel between GGMK/gpu and GGMK/cpu is a bridge channel. The legacy names `"host.rx"` and `"host.tx"` are retained as the default bridge pair:
 * `"host.rx"` — CPU → GPU (ingress events/data from peripherals)
 * `"host.tx"` — GPU → CPU (egress results/requests to peripherals)
 
@@ -678,20 +678,20 @@ GMK_EV_CHAN_DRAIN     GMK_EV_CHAN_OPEN       GMK_EV_CHAN_CLOSE
 GMK_EV_WATCHDOG       GMK_EV_WORKER_PARK    GMK_EV_WORKER_WAKE
 ```
 
-Traces are written to per-tenant ring buffers on each kernel. GMK/cpu collects its own traces locally. GMK/gpu traces are drained via bridge channel (`"sys.trace"`) without stalling the GPU kernel. The `cli` module on GMK/cpu aggregates traces from both kernels for unified display.
+Traces are written to per-tenant ring buffers on each kernel. GGMK/cpu collects its own traces locally. GGMK/gpu traces are drained via bridge channel (`"sys.trace"`) without stalling the GPU kernel. The `cli` module on GGMK/cpu aggregates traces from both kernels for unified display.
 
 ### Trace Cost Control
 
 "Observe everything" does not mean "write everything." At 2M tasks/sec, emitting a 24-byte trace record for every `TASK_START` and `TASK_END` would generate ~96 MB/s of trace traffic — significant HBM bandwidth overhead. The observability system provides three levels of cost control:
 
 **1. Per-module trace level** (runtime configurable):
-Each module has a trace level: `GMK_TRACE_OFF`, `GMK_TRACE_ERROR`, `GMK_TRACE_WARN`, `GMK_TRACE_INFO`, `GMK_TRACE_ALL`. The default is `GMK_TRACE_WARN`. The `gmk_trace()` call checks the level before writing — a single branch, no memory traffic if filtered. Levels are configurable at runtime via the host CLI (`gmk trace --level INFO --module physics`).
+Each module has a trace level: `GMK_TRACE_OFF`, `GMK_TRACE_ERROR`, `GMK_TRACE_WARN`, `GMK_TRACE_INFO`, `GMK_TRACE_ALL`. The default is `GMK_TRACE_WARN`. The `gmk_trace()` call checks the level before writing — a single branch, no memory traffic if filtered. Levels are configurable at runtime via the host CLI (`ggmk trace --level INFO --module physics`).
 
 **2. Statistical sampling** (runtime configurable):
 When trace level is `GMK_TRACE_ALL`, a sampling rate controls what fraction of events are actually written. `GMK_TRACE_SAMPLE_RATE` (default 1.0 = every event, 0.01 = 1% of events). Sampling uses a fast per-worker PRNG — no atomics. Sampled traces include a `sampled` flag so analysis tools can scale up counts.
 
 **3. Compile-time stripping** (build-time):
-`gmk build --strip-trace` removes all `gmk_trace()` calls at compile time via preprocessor macros. This produces a zero-overhead production build with no trace infrastructure at all. Metrics (counters, gauges) are never stripped — they are always available.
+`ggmk build --strip-trace` removes all `gmk_trace()` calls at compile time via preprocessor macros. This produces a zero-overhead production build with no trace infrastructure at all. Metrics (counters, gauges) are never stripped — they are always available.
 
 Tasks with `GMK_TF_EMIT_TRACE` set bypass all filtering and are always traced regardless of module level or sampling rate. This ensures critical tasks can be individually tracked.
 
@@ -705,7 +705,7 @@ Tasks with `GMK_TF_EMIT_TRACE` set bypass all filtering and are always traced re
 
 * **Soft Fail**: handler returns a fail code. Task dropped or routed to `"sys.error"` channel.
 * **Retry**: handler returns `GMK_RETRY`. Microkernel re-enqueues with backoff counter.
-* **Poison**: repeated failures mark a task type as unhealthy. Poison detection is **rate-based**: a type is flagged when it exceeds `GMK_POISON_RATE` failures per `GMK_POISON_WINDOW` ticks (defaults: 32 failures per 1000 ticks). This prevents transient error spikes from escalating — a burst of 30 failures in one tick followed by smooth operation does not trigger poison. A sustained 5% failure rate does. When a type is poisoned, new tasks of that type are routed directly to `"sys.error"` until the host explicitly clears the flag via `gmk mod reset TYPE`.
+* **Poison**: repeated failures mark a task type as unhealthy. Poison detection is **rate-based**: a type is flagged when it exceeds `GMK_POISON_RATE` failures per `GMK_POISON_WINDOW` ticks (defaults: 32 failures per 1000 ticks). This prevents transient error spikes from escalating — a burst of 30 failures in one tick followed by smooth operation does not trigger poison. A sustained 5% failure rate does. When a type is poisoned, new tasks of that type are routed directly to `"sys.error"` until the host explicitly clears the flag via `ggmk mod reset TYPE`.
 
 ### Channel Error Handling
 
@@ -718,10 +718,10 @@ int gmk_chan_on_error(gmk_ctx_t* ctx, uint32_t chan, gmk_handler_fn error_fn);
 ### Watchdog
 
 * GPU workers update a per-worker atomic heartbeat counter every N iterations.
-* The `watchdog` module on GMK/cpu polls GPU heartbeats via bridge channel at configurable interval (default 100ms).
+* The `watchdog` module on GGMK/cpu polls GPU heartbeats via bridge channel at configurable interval (default 100ms).
 * Watchdog thresholds are **configurable per handler type** (`GMK_WATCHDOG_CYCLES`, default 10M cycles). Under heavy HBM contention, even fast handlers may take longer than expected — a hard constant risks false positives. Thresholds should be tuned based on observed workload during bring-up. Adaptive thresholds (exponential moving average) are a v0.2 improvement.
 * 2 missed heartbeats at the configured threshold = warning trace event.
-* 5 missed heartbeats = `watchdog` requests GPU reset via `gpu_drv`, which resets and reboots GMK/gpu. GMK/cpu continues running throughout.
+* 5 missed heartbeats = `watchdog` requests GPU reset via `gpu_drv`, which resets and reboots GGMK/gpu. GGMK/cpu continues running throughout.
 
 ### Replay
 
@@ -729,15 +729,15 @@ Tasks marked `GMK_TF_IDEMPOTENT` may be re-enqueued after restart. Host may pers
 
 ---
 
-## 12. GMK/cpu — The CPU Kernel
+## 12. GGMK/cpu — The CPU Kernel
 
-GMK/cpu is a peer microkernel, not a shim. It runs on the CPU and owns all peripheral hardware. It shares the same architectural primitives as GMK/gpu: tasks, channels, modules, an allocator, and observability.
+GGMK/cpu is a peer microkernel, not a shim. It runs on the CPU and owns all peripheral hardware. It shares the same architectural primitives as GGMK/gpu: tasks, channels, modules, an allocator, and observability.
 
 ### Structure
 
-GMK/cpu mirrors GMK/gpu's architecture, adapted for CPU hardware:
+GGMK/cpu mirrors GGMK/gpu's architecture, adapted for CPU hardware:
 
-| Primitive | GMK/gpu | GMK/cpu |
+| Primitive | GGMK/gpu | GGMK/cpu |
 |---|---|---|
 | Workers | Thread blocks (CUDA) | OS threads or bare-metal cores |
 | Scheduler | Type-bucketed GRQ + SPSC LQs | Simple run queue + per-thread LQs |
@@ -753,8 +753,8 @@ GMK/cpu mirrors GMK/gpu's architecture, adapted for CPU hardware:
 | `gpu_drv` | GPU driver interface. Wraps `libcuda.so` + `nvidia.ko` (or bare-metal GPU init in Path 3). Handles GPU memory allocation, kernel launch, and DMA transfers. Produces/consumes bridge channels. This is a **driver module** — `libcuda.so` is a dependency of this module, not of the system. |
 | `nic` | Network I/O. Manages NIC hardware (or kernel bypass via DPDK/io_uring in Path 1). Produces `"net.rx"`, consumes `"net.tx"`. |
 | `nvme` | Storage I/O. Manages NVMe devices. Produces `"disk.read.resp"`, consumes `"disk.write"`, `"disk.read"`. |
-| `watchdog` | Monitors GMK/gpu heartbeats via bridge channel. Triggers reset + reload on hang. |
-| `cli` | The `gmk` command-line interface. Consumes `"cli.resp"`, produces `"cli.cmd"`. See USERLAND.md. |
+| `watchdog` | Monitors GGMK/gpu heartbeats via bridge channel. Triggers reset + reload on hang. |
+| `cli` | The `ggmk` command-line interface. Consumes `"cli.resp"`, produces `"cli.cmd"`. See USERLAND.md. |
 
 ### Cross-Kernel Channels (Bridge Channels)
 
@@ -769,8 +769,8 @@ A bridge channel connects a producer on one kernel to a consumer on another. The
 **Modules do not know which transport their channels use.** A GPU module producing on `"sim.results"` uses the same `gmk_chan_emit` call whether the consumer is another GPU module (local ring buffer) or a CPU module (bridge via DMA). The channel registry resolves locality at boot and wires the appropriate transport.
 
 Bridge channel implementation:
-* The `gpu_drv` module on GMK/cpu owns the DMA path.
-* GPU→CPU: `gpu_drv` polls the GPU-side bridge ring buffer via DMA reads, delivers tasks to GMK/cpu's local channels.
+* The `gpu_drv` module on GGMK/cpu owns the DMA path.
+* GPU→CPU: `gpu_drv` polls the GPU-side bridge ring buffer via DMA reads, delivers tasks to GGMK/cpu's local channels.
 * CPU→GPU: `gpu_drv` writes tasks to the GPU-side bridge ring buffer via DMA writes.
 * Bridge channels respect the same delivery guarantees (lossy/lossless) as local channels. DMA transfer failures are retried by `gpu_drv`; persistent failures route to `"sys.error"`.
 
@@ -781,7 +781,7 @@ The legacy `"host.rx"` and `"host.tx"` names are retained as aliases for the def
 PCIe DMA round-trips cost 2–10μs — three orders of magnitude slower than HBM channel operations (~10ns). Transferring one task at a time across the bridge would bottleneck any high-throughput channel. The `gpu_drv` module uses **asynchronous batched DMA**:
 
 * GPU-side bridge ring buffers live in **HBM** (not pinned host memory). GPU modules write to them at full HBM speed. There is no PCIe overhead on the GPU's hot path.
-* `gpu_drv` on GMK/cpu runs a DMA poll loop. Each iteration, it issues a single DMA read that pulls **a batch** of pending tasks from the GPU-side ring buffer into a pinned host-memory staging area. Batch size is configurable (`GMK_BRIDGE_BATCH_SIZE`, default 64 tasks).
+* `gpu_drv` on GGMK/cpu runs a DMA poll loop. Each iteration, it issues a single DMA read that pulls **a batch** of pending tasks from the GPU-side ring buffer into a pinned host-memory staging area. Batch size is configurable (`GMK_BRIDGE_BATCH_SIZE`, default 64 tasks).
 * The poll fires when either the batch is full or a timeout expires (`GMK_BRIDGE_POLL_US`, default 10μs). This amortizes PCIe latency across many tasks.
 * CPU→GPU transfers use the same batching in reverse: tasks accumulate in a host-side staging buffer, then a single DMA write pushes the batch to the GPU-side ring buffer.
 
@@ -797,7 +797,7 @@ This is handled transparently by `gpu_drv`:
 * **CPU→GPU**: `gpu_drv` allocates a buffer in the GPU's HBM arena (via a reserved bridge allocation pool), DMA-writes the payload, and rewrites `payload_ptr` to the HBM address.
 * **Inline payloads** (`meta0`/`meta1` only, `payload_len == 0`): no copy needed. The 16 bytes travel in the task header. This is the fast path — design cross-kernel protocols to use inline payloads where possible.
 
-Modules do not perform these copies. The bridge is transparent. A handler on GMK/cpu receives a task with a valid host-memory `payload_ptr`, just as if the task had been produced locally. The SDK's `GMK_PAYLOAD()` macro works identically on both sides.
+Modules do not perform these copies. The bridge is transparent. A handler on GGMK/cpu receives a task with a valid host-memory `payload_ptr`, just as if the task had been produced locally. The SDK's `GMK_PAYLOAD()` macro works identically on both sides.
 
 **Large payload warning**: bridge channels carrying tasks with large payloads (>64KB) will saturate PCIe bandwidth under high throughput. The build system warns if a type carried on a bridge channel has a payload schema exceeding `GMK_BRIDGE_PAYLOAD_WARN_SIZE` (default 64KB). For bulk data transfer, prefer streaming many small tasks over one large payload — this amortizes DMA setup cost and allows interleaving with other bridge traffic.
 
@@ -805,23 +805,23 @@ Modules do not perform these copies. The bridge is transparent. A handler on GMK
 
 Opportunistic bridge DMA is nondeterministic — transfer timing depends on poll intervals, PCIe bus contention, and CPU scheduling jitter. When deterministic tasks cross the bridge:
 
-> **Cross-kernel deterministic rule**: at the start of tick T, GMK/gpu does not dispatch any deterministic task until `gpu_drv` on GMK/cpu has acknowledged that all CPU-produced tasks for tick T-1 have been delivered to the GPU-side bridge ring buffer. `gpu_drv` sends an explicit **tick fence** message after flushing each tick's cross-kernel tasks.
+> **Cross-kernel deterministic rule**: at the start of tick T, GGMK/gpu does not dispatch any deterministic task until `gpu_drv` on GGMK/cpu has acknowledged that all CPU-produced tasks for tick T-1 have been delivered to the GPU-side bridge ring buffer. `gpu_drv` sends an explicit **tick fence** message after flushing each tick's cross-kernel tasks.
 
 This means the GPU waits for the CPU at each tick boundary. The cost is one synchronous DMA round-trip per tick (~5μs). For simulations running at 1000+ ticks/second this adds ~5ms/second of sync overhead — acceptable for determinism guarantees. For non-deterministic workloads, the bridge runs fully asynchronous with no tick fences.
 
 ### Boot Sequence
 
 1. **Hardware discovery**: bare-metal init or unikernel starts. PCIe enumeration. GPU(s) detected.
-2. **GMK/cpu boot**: CPU kernel initializes — allocator, channel registry, module registry. CPU modules register.
-3. **`gpu_drv` init**: loads NVIDIA driver (or bare-metal GPU init). Allocates HBM buffers. Uploads GMK/gpu kernel image.
-4. **GMK/gpu launch**: `gpu_drv` launches the persistent GPU kernel. GPU workers start, GPU modules register, GPU channels initialize.
+2. **GGMK/cpu boot**: CPU kernel initializes — allocator, channel registry, module registry. CPU modules register.
+3. **`gpu_drv` init**: loads NVIDIA driver (or bare-metal GPU init). Allocates HBM buffers. Uploads GGMK/gpu kernel image.
+4. **GGMK/gpu launch**: `gpu_drv` launches the persistent GPU kernel. GPU workers start, GPU modules register, GPU channels initialize.
 5. **Channel wiring**: both kernels exchange channel declarations. Bridge channels are established. Type mismatches across kernels are boot-time errors.
 6. **System ready**: both kernels running, all channels wired, bridge DMA active.
 
 ```
-$ gmk boot
-GMK/cpu.0  booted |  4 workers |  5 modules (gpu_drv, nic, nvme, watchdog, cli)
-GMK/gpu.0  booted | 64 workers | 12 modules (kv, echo, timer, log, ...)
+$ ggmk boot
+GGMK/cpu.0  booted |  4 workers |  5 modules (gpu_drv, nic, nvme, watchdog, cli)
+GGMK/gpu.0  booted | 64 workers | 12 modules (kv, echo, timer, log, ...)
 bridge channels: 4 (host.rx, host.tx, sys.error, sys.trace)
 system ready
 ```
@@ -829,8 +829,8 @@ system ready
 ### Fault Isolation
 
 Each kernel is independently recoverable:
-* If GMK/gpu hangs, `watchdog` on GMK/cpu detects it, resets the GPU via `gpu_drv`, and reboots GMK/gpu. GMK/cpu continues running.
-* If a CPU module crashes, GMK/cpu's scheduler routes to `"sys.error"` and continues. GPU is unaffected.
+* If GGMK/gpu hangs, `watchdog` on GGMK/cpu detects it, resets the GPU via `gpu_drv`, and reboots GGMK/gpu. GGMK/cpu continues running.
+* If a CPU module crashes, GGMK/cpu's scheduler routes to `"sys.error"` and continues. GPU is unaffected.
 * Bridge channel disconnection (e.g., during GPU reset) is visible as `GMK_CHAN_CLOSED` to subscribers on both sides.
 
 ---
@@ -873,9 +873,9 @@ Each kernel is independently recoverable:
 
 15. **Cross-kernel channels**: GPU module emits on bridge channel, CPU module receives via DMA. Verify delivery, ordering, and backpressure across the PCIe boundary. Lossy and lossless guarantees hold for bridge channels.
 
-16. **Dual-kernel boot**: GMK/cpu boots, discovers GPU, launches GMK/gpu via `gpu_drv`. Channel wiring validated across kernels. Type mismatches between GPU producer and CPU consumer caught at boot.
+16. **Dual-kernel boot**: GGMK/cpu boots, discovers GPU, launches GGMK/gpu via `gpu_drv`. Channel wiring validated across kernels. Type mismatches between GPU producer and CPU consumer caught at boot.
 
-17. **GPU fault recovery**: kill GMK/gpu (simulated hang). `watchdog` module on GMK/cpu detects, resets GPU via `gpu_drv`, reboots GMK/gpu. GMK/cpu remains running throughout. Bridge channels reconnect.
+17. **GPU fault recovery**: kill GGMK/gpu (simulated hang). `watchdog` module on GGMK/cpu detects, resets GPU via `gpu_drv`, reboots GGMK/gpu. GGMK/cpu remains running throughout. Bridge channels reconnect.
 
 18. **Bridge payload marshaling**: GPU module emits task with 4KB payload on bridge channel. CPU module receives task with valid host-memory `payload_ptr` and correct data. Reverse direction: CPU module emits with payload, GPU module receives valid HBM `payload_ptr`. Inline payloads (`meta0`/`meta1` only) cross without copy.
 
@@ -893,10 +893,10 @@ These are deliberate simplifications. They are acceptable for v0.1 workloads and
 * **GRQ L2 atomic pressure**: type-bucketed GRQ distributes contention across N buckets, but at very high SM counts, atomic operations on bucket head/tail pointers still compete for L2 crossbar bandwidth. v0.2 introduces GPC-local sub-queues.
 * **Shared memory ceiling**: persistent blocks allocate shared memory for the worst-case handler. One heavy handler can cap blocks/SM for the entire system. Dedicated workers mitigate this but introduce static partitioning. v0.2 introduces dynamic worker flavors.
 * **Watchdog granularity**: per-block heartbeats with configurable thresholds. False positives possible under heavy HBM contention. v0.2 introduces adaptive thresholds via exponential moving average.
-* **Single GPU only**: v0.1 supports exactly one GMK/gpu and one GMK/cpu. Multi-GPU requires bridge channel multiplexing and cross-GPU task routing (v0.3).
+* **Single GPU only**: v0.1 supports exactly one GGMK/gpu and one GGMK/cpu. Multi-GPU requires bridge channel multiplexing and cross-GPU task routing (v0.3).
 * **Bridge channel latency**: GPU-local channels operate at ~10ns (HBM atomics). Bridge channels operate at ~2-10μs (PCIe DMA round-trip) — a 1000x difference. DMA batching amortizes this for throughput, but latency-sensitive request-reply patterns across the bridge will feel slow. Design cross-kernel protocols to be asynchronous (fire-and-forget or batched-response), not synchronous RPC. v0.2 explores GPUDirect RDMA to reduce bridge latency for NIC/NVMe traffic.
 * **Bridge payload copy cost**: every non-inline payload crossing the bridge incurs a DMA copy. A bridge channel carrying 10K tasks/sec with 4KB payloads generates ~40MB/sec of PCIe traffic per direction. PCIe Gen4 x16 has ~25GB/sec bandwidth, so this is fine. But a careless design (e.g., 1MB payloads at 10K/sec = 10GB/sec) will saturate the bus. Prefer inline payloads (`meta0`/`meta1`) for cross-kernel control messages.
-* **CPU kernel simplicity**: GMK/cpu uses a simple run queue, not the type-bucketed GRQ. Sufficient for I/O-bound CPU modules in v0.1. CPU-heavy workloads (e.g., complex network protocol processing) may need a more sophisticated CPU scheduler in v0.2.
+* **CPU kernel simplicity**: GGMK/cpu uses a simple run queue, not the type-bucketed GRQ. Sufficient for I/O-bound CPU modules in v0.1. CPU-heavy workloads (e.g., complex network protocol processing) may need a more sophisticated CPU scheduler in v0.2.
 * **Cross-kernel determinism cost**: tick fence synchronization adds ~5μs per tick. At 1000 ticks/sec this is 5ms/sec (0.5%) overhead. At 10,000 ticks/sec it becomes 50ms/sec (5%) — potentially significant. v0.2 may batch tick fences or use GPUDirect doorbells to reduce sync cost.
 
 ---
@@ -917,13 +917,13 @@ These are deliberate simplifications. They are acceptable for v0.1 workloads and
 * Multi-queue QoS policies (tenant budgets)
 * GPUDirect paths (NVMe/NIC) — `gpu_drv` sets up RDMA mappings, GPU modules bypass CPU for I/O
 * Time wheel for EVQ
-* **Path 3 bare-metal option**: replace unikernel + `libcuda.so` with bare-metal `gpu_drv` using open-source kernel module as reference. Same GMK/cpu interface, different driver implementation.
+* **Path 3 bare-metal option**: replace unikernel + `libcuda.so` with bare-metal `gpu_drv` using open-source kernel module as reference. Same GGMK/cpu interface, different driver implementation.
 
 ### v0.3
 
-* Multi-GPU federation: multiple GMK/gpu instances, each with bridge channels to GMK/cpu
-* Cross-GPU channels (routed via GMK/cpu or GPUDirect P2P where available)
-* Multi-node: GMK/cpu instances on separate hosts, connected via `nic` module channels
+* Multi-GPU federation: multiple GGMK/gpu instances, each with bridge channels to GGMK/cpu
+* Cross-GPU channels (routed via GGMK/cpu or GPUDirect P2P where available)
+* Multi-node: GGMK/cpu instances on separate hosts, connected via `nic` module channels
 * Stronger isolation (capabilities per arena/queue/channel)
 * Snapshot + restore for deterministic replay at scale
 * Kernel migration: move a module from GPU to CPU or vice versa (channel rewiring, no code change)

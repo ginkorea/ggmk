@@ -1,7 +1,7 @@
 /* BSD Zero Clause License (0BSD)
  *
  * Limine Boot Protocol Header - v8.x compatible
- * Minimal vendored subset for GMK/cpu kernel.
+ * Minimal vendored subset for GGMK/cpu kernel.
  */
 #ifndef LIMINE_H
 #define LIMINE_H

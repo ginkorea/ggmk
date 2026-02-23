@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — x86 bare-metal HAL: park (sti;hlt + LAPIC IPI)
+ * GGMK/cpu — x86 bare-metal HAL: park (sti;hlt + LAPIC IPI)
  */
-#include "gmk/hal.h"
+#include "ggmk/hal.h"
 #include "../../arch/x86_64/lapic.h"
 
 void gmk_hal_park_init(gmk_hal_park_t *p) {

@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — SMP bringup via Limine goto_address
+ * GGMK/cpu — SMP bringup via Limine goto_address
  */
 #ifndef GMK_SMP_H
 #define GMK_SMP_H

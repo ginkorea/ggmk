@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Kernel monitor CLI over serial
+ * GGMK/cpu — Kernel monitor CLI over serial
  *
  * BSP runs this loop instead of gmk_worker_loop.
  * Polls COM1, processes commands, prints to serial via kprintf.
@@ -15,9 +15,9 @@
 #include "smp.h"
 #include "lapic.h"
 #include "mem.h"
-#include "../../include/gmk/worker.h"
-#include "../../include/gmk/metrics.h"
-#include "../../include/gmk/module.h"
+#include "../../include/ggmk/worker.h"
+#include "../../include/ggmk/metrics.h"
+#include "../../include/ggmk/module.h"
 #include "../../drivers/virtio/virtio_blk.h"
 
 /* ── Line buffer ─────────────────────────────────────────────────── */
@@ -541,7 +541,7 @@ static void cli_dispatch(void) {
 /* ── CLI loop ────────────────────────────────────────────────────── */
 
 static void cli_prompt(void) {
-    kprintf("gmk> ");
+    kprintf("ggmk> ");
 }
 
 void cli_run(gmk_kernel_t *kernel) {
@@ -557,7 +557,7 @@ void cli_run(gmk_kernel_t *kernel) {
             blk_scratch = (uint8_t *)phys_to_virt(phys);
     }
 
-    kprintf("\n=== GMK Kernel Monitor ===\n");
+    kprintf("\n=== GGMK Kernel Monitor ===\n");
     kprintf("Type 'help' for available commands.\n\n");
     cli_prompt();
 

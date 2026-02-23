@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Freestanding string operations
+ * GGMK/cpu — Freestanding string operations
  */
 #ifndef GMK_ARCH_STRING_H
 #define GMK_ARCH_STRING_H

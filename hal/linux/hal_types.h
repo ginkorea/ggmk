@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Linux HAL type definitions
+ * GGMK/cpu — Linux HAL type definitions
  */
 #ifndef GMK_HAL_LINUX_TYPES_H
 #define GMK_HAL_LINUX_TYPES_H

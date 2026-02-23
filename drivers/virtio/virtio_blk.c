@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Virtio-blk driver (legacy, synchronous, single-sector)
+ * GGMK/cpu — Virtio-blk driver (legacy, synchronous, single-sector)
  *
  * Each I/O operation is a 3-descriptor chain:
  *   [0] Header (virtio_blk_req): type + sector — device-readable

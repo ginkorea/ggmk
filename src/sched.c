@@ -1,8 +1,8 @@
 /*
- * GMK/cpu — Scheduler init/destroy
+ * GGMK/cpu — Scheduler init/destroy
  */
-#include "gmk/sched.h"
-#include "gmk/hal.h"
+#include "ggmk/sched.h"
+#include "ggmk/hal.h"
 
 int gmk_sched_init(gmk_sched_t *s, uint32_t n_workers) {
     if (!s || n_workers == 0 || n_workers > GMK_MAX_WORKERS)

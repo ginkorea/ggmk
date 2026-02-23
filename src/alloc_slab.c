@@ -1,8 +1,8 @@
 /*
- * GMK/cpu — Fixed-size slab allocator with free list
+ * GGMK/cpu — Fixed-size slab allocator with free list
  * Lock-protected. Index-based free list.
  */
-#include "gmk/alloc.h"
+#include "ggmk/alloc.h"
 #include <stdlib.h>
 #include <string.h>
 

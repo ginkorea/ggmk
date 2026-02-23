@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Error codes, flags, constants, limits
+ * GGMK/cpu — Error codes, flags, constants, limits
  */
 #ifndef GMK_ERROR_H
 #define GMK_ERROR_H

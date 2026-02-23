@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Kernel main: boot GMK, submit test tasks, enter CLI
+ * GGMK/cpu — Kernel main: boot GGMK, submit test tasks, enter CLI
  */
 #include "serial.h"
 #include "lapic.h"
@@ -12,8 +12,8 @@
 #include "mem.h"
 #include "cli.h"
 
-#include "../../include/gmk/boot.h"
-#include "../../include/gmk/worker.h"
+#include "../../include/ggmk/boot.h"
+#include "../../include/ggmk/worker.h"
 #include "../../drivers/virtio/virtio_blk.h"
 
 /* ── Echo handler: prints task info to serial ───────────────────── */
@@ -97,7 +97,7 @@ static void ap_worker_entry(void *arg) {
 
 /* ── Kernel main ────────────────────────────────────────────────── */
 void kmain(uint32_t cpu_count) {
-    kprintf("\n=== GMK/cpu kernel main ===\n");
+    kprintf("\n=== GGMK/cpu kernel main ===\n");
 
     /* Configure boot */
     gmk_boot_cfg_t cfg = {
@@ -109,7 +109,7 @@ void kmain(uint32_t cpu_count) {
     /* Register modules */
     gmk_module_t *modules[] = { &echo_module, &cli_module };
 
-    kprintf("Booting GMK kernel: %u workers, %lu MB arena\n",
+    kprintf("Booting GGMK kernel: %u workers, %lu MB arena\n",
             cfg.n_workers, (unsigned long)(cfg.arena_size >> 20));
 
     /* Boot the kernel subsystems */
@@ -118,7 +118,7 @@ void kmain(uint32_t cpu_count) {
         PANIC("gmk_boot failed (rc=%d)", rc);
     }
 
-    kprintf("GMK kernel booted successfully\n");
+    kprintf("GGMK kernel booted successfully\n");
 
     /* VMM smoke test: kmalloc + demand page + read/write + kfree */
     {

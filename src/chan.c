@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Channel open/emit/sub/close/drain
+ * GGMK/cpu — Channel open/emit/sub/close/drain
  *
  * Thread safety: per-channel lock protects subs[]/n_subs mutations.
  * The `open` field is _Atomic(bool) for lock-free checks on the fast path.
@@ -8,10 +8,10 @@
  * Fan-out payloads: tasks with GMK_TF_PAYLOAD_RC get refcount retained
  * once per subscriber copy. Workers release after handler completion.
  */
-#include "gmk/chan.h"
-#include "gmk/alloc.h"
-#include "gmk/trace.h"
-#include "gmk/metrics.h"
+#include "ggmk/chan.h"
+#include "ggmk/alloc.h"
+#include "ggmk/trace.h"
+#include "ggmk/metrics.h"
 #include <string.h>
 
 /* ── Helpers ────────────────────────────────────────────────────── */

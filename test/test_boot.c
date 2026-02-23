@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Full boot test: boot → execute task → halt
+ * GGMK/cpu — Full boot test: boot → execute task → halt
  */
-#include "gmk/gmk.h"
+#include "ggmk/ggmk.h"
 #include "test_util.h"
 #include <string.h>
 #include <unistd.h>

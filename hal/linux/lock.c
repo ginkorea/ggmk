@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Linux HAL: lock (pthread_mutex wrappers)
+ * GGMK/cpu — Linux HAL: lock (pthread_mutex wrappers)
  */
-#include "gmk/hal.h"
+#include "ggmk/hal.h"
 #include <pthread.h>
 
 void gmk_hal_lock_init(gmk_hal_lock_t *l) {

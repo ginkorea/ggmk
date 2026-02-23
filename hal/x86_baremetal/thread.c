@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — x86 bare-metal HAL: thread (no-op, APs pre-started by SMP)
+ * GGMK/cpu — x86 bare-metal HAL: thread (no-op, APs pre-started by SMP)
  */
-#include "gmk/hal.h"
+#include "ggmk/hal.h"
 
 int gmk_hal_thread_create(gmk_hal_thread_t *t, void *(*fn)(void *), void *arg) {
     (void)t; (void)fn; (void)arg;

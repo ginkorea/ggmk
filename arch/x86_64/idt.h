@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — IDT setup + fault handler
+ * GGMK/cpu — IDT setup + fault handler
  */
 #ifndef GMK_IDT_H
 #define GMK_IDT_H

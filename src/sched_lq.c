@@ -1,9 +1,9 @@
 /*
- * GMK/cpu — Local Queue: SPSC per worker with yield watermark
+ * GGMK/cpu — Local Queue: SPSC per worker with yield watermark
  *
  * Normal push fails past 75% fill. Yield push uses full capacity.
  */
-#include "gmk/sched.h"
+#include "ggmk/sched.h"
 
 int gmk_lq_init(gmk_lq_t *lq, uint32_t cap) {
     if (!lq) return -1;

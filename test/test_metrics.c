@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Metrics tests
+ * GGMK/cpu — Metrics tests
  */
-#include "gmk/metrics.h"
+#include "ggmk/metrics.h"
 #include "test_util.h"
 #include <pthread.h>
 

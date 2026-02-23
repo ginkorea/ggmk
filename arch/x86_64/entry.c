@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Kernel entry point (_kstart)
+ * GGMK/cpu — Kernel entry point (_kstart)
  *
  * Limine loads us into higher-half. We initialize serial, GDT, IDT,
  * memory, then hand off to kmain.

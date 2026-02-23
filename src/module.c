@@ -1,9 +1,9 @@
 /*
- * GMK/cpu — Module register/dispatch/poison
+ * GGMK/cpu — Module register/dispatch/poison
  */
-#include "gmk/module.h"
-#include "gmk/trace.h"
-#include "gmk/metrics.h"
+#include "ggmk/module.h"
+#include "ggmk/trace.h"
+#include "ggmk/metrics.h"
 #include <string.h>
 
 int gmk_module_reg_init(gmk_module_reg_t *mr, gmk_chan_reg_t *chan,

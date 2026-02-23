@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Kernel thread types for freestanding SMP
+ * GGMK/cpu — Kernel thread types for freestanding SMP
  */
 #ifndef GMK_ARCH_THREAD_H
 #define GMK_ARCH_THREAD_H

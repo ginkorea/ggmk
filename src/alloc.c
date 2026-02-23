@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Unified allocator routing
+ * GGMK/cpu — Unified allocator routing
  *
  * Arena subdivision:
  *   10% task slab (48-byte objects)
@@ -7,8 +7,8 @@
  *   68% block allocator (power-of-two bins)
  *   20% bump allocator
  */
-#include "gmk/alloc.h"
-#include "gmk/types.h"
+#include "ggmk/alloc.h"
+#include "ggmk/types.h"
 #include <string.h>
 
 int gmk_alloc_init(gmk_alloc_t *a, size_t arena_size) {

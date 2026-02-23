@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Module registry + dispatch table
+ * GGMK/cpu — Module registry + dispatch table
  *
  * Explicit registration array for v0.1.
  * Dispatch table: gmk_handler_fn dispatch[256] indexed by type ID.

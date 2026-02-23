@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Virtio-blk driver
+ * GGMK/cpu — Virtio-blk driver
  */
 #ifndef GMK_VIRTIO_BLK_H
 #define GMK_VIRTIO_BLK_H

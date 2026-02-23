@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — MPMC lock-free ring buffer (Vyukov bounded queue)
+ * GGMK/cpu — MPMC lock-free ring buffer (Vyukov bounded queue)
  * Multi-producer, multi-consumer. Used for RQ sub-queues and channel rings.
  * Per-slot sequence numbers. Power-of-two capacity. No ABA problem.
  */

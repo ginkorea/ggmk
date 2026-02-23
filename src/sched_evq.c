@@ -1,12 +1,12 @@
 /*
- * GMK/cpu — Event Queue: bounded binary min-heap
+ * GGMK/cpu — Event Queue: bounded binary min-heap
  *
  * Ordered by key = (tick << 32) | (priority << 16) | seq.
  * Lock-protected (heap ops aren't trivially lock-free).
  * Drain limit per check: GMK_EVQ_DRAIN_LIMIT.
  */
-#include "gmk/sched.h"
-#include "gmk/hal.h"
+#include "ggmk/sched.h"
+#include "ggmk/hal.h"
 
 static inline uint64_t evq_key(const gmk_task_t *t, uint32_t seq) {
     uint32_t tick = (uint32_t)t->meta0;  /* meta0 used as tick for EVQ */

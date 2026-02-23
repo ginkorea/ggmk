@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — PCI bus enumeration via legacy I/O configuration ports
+ * GGMK/cpu — PCI bus enumeration via legacy I/O configuration ports
  *
  * Port 0xCF8: CONFIG_ADDRESS (bus/dev/func/offset selector)
  * Port 0xCFC: CONFIG_DATA (read/write the selected register)

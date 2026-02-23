@@ -1,6 +1,6 @@
-# GMK Userland v0.1
+# GGMK Userland v0.1
 
-The runtime libraries, standard modules, toolchain, and shell for the GMK system of microkernels. Covers both GMK/gpu (compute modules) and GMK/cpu (peripheral and I/O modules).
+The runtime libraries, standard modules, toolchain, and shell for the GGMK system of microkernels. Covers both GGMK/gpu (compute modules) and GGMK/cpu (peripheral and I/O modules).
 
 ---
 
@@ -14,7 +14,7 @@ A module does one thing. `kv` stores data. `timer` emits ticks. `log` writes log
 
 ### Channels replace function calls.
 
-In traditional programming, you call a function. In GMK, you emit a task on a channel. This is not indirection for its own sake — it decouples modules, enables fan-out, and makes the system observable. Every inter-module interaction is visible in the trace stream.
+In traditional programming, you call a function. In GGMK, you emit a task on a channel. This is not indirection for its own sake — it decouples modules, enables fan-out, and makes the system observable. Every inter-module interaction is visible in the trace stream.
 
 ### The SDK is honest.
 
@@ -22,20 +22,20 @@ The module SDK does not hide the GPU. It abstracts the kernel API's sharp edges 
 
 ### Ship the coreutils.
 
-A bare kernel is useless. GMK ships with standard modules that solve common problems: key-value storage, logging, timing, synchronization, routing. These are not examples — they are production building blocks.
+A bare kernel is useless. GGMK ships with standard modules that solve common problems: key-value storage, logging, timing, synchronization, routing. These are not examples — they are production building blocks.
 
 ### Modules don't know where they live.
 
-A module talks to channels. It doesn't know if the channel partner is on the same GPU, on the CPU, or on another machine. The channel abstraction hides transport. This means a module written for GMK/gpu can communicate with a module on GMK/cpu without code changes — only channel wiring.
+A module talks to channels. It doesn't know if the channel partner is on the same GPU, on the CPU, or on another machine. The channel abstraction hides transport. This means a module written for GGMK/gpu can communicate with a module on GGMK/cpu without code changes — only channel wiring.
 
 ---
 
 ## 1. Overview and Layering
 
-GMK is a system of two peer microkernels connected by bridge channels:
+GGMK is a system of two peer microkernels connected by bridge channels:
 
 ```
-GMK/gpu (GPU)                              GMK/cpu (CPU)
+GGMK/gpu (GPU)                              GGMK/cpu (CPU)
 ┌────────────────────────────────┐        ┌────────────────────────────────┐
 │ Your GPU Modules (domain logic)│        │ Your CPU Modules (custom I/O)  │
 ├────────────────────────────────┤        ├────────────────────────────────┤
@@ -49,7 +49,7 @@ GMK/gpu (GPU)                              GMK/cpu (CPU)
 │ libgmk Tier 1: Kernel API     │        │ libgmk_cpu Tier 1: Kernel API  │
 │   gmk_emit, gmk_alloc, ...    │        │   gmk_emit, gmk_alloc, ...    │
 ├────────────────────────────────┤        ├────────────────────────────────┤
-│ GMK/gpu Microkernel            │        │ GMK/cpu Microkernel            │
+│ GGMK/gpu Microkernel            │        │ GGMK/cpu Microkernel            │
 │   Scheduler, Allocator,       │        │   Scheduler, Allocator,        │
 │   Channels, Modules           │        │   Channels, Modules            │
 └───────────┬───────────────────┘        └───────────┬────────────────────┘
@@ -61,7 +61,7 @@ You can use any layer. Tier 1 is for when you need full control. Tier 2 is for w
 
 The API surface is the same on both kernels. `gmk_emit`, `gmk_chan_emit`, `gmk_alloc` — same function names, same semantics. GPU modules are CUDA C device code. CPU modules are C or Rust host code. The channel interface is identical.
 
-**GPU module authors write CUDA C device code. CPU module authors write C or Rust.** GMK is not a managed runtime. There is no interpreter, no garbage collector, no Python/JS bridge. Domain users who want higher-level abstractions write them as modules using the SDK, or use the standard modules (kv, timer, reduce, gate, nic, nvme) as building blocks. GPU-native DSLs or restricted bytecode interpreters could be implemented as modules in the future, but they are not part of v0.1.
+**GPU module authors write CUDA C device code. CPU module authors write C or Rust.** GGMK is not a managed runtime. There is no interpreter, no garbage collector, no Python/JS bridge. Domain users who want higher-level abstractions write them as modules using the SDK, or use the standard modules (kv, timer, reduce, gate, nic, nvme) as building blocks. GPU-native DSLs or restricted bytecode interpreters could be implemented as modules in the future, but they are not part of v0.1.
 
 ---
 
@@ -69,8 +69,8 @@ The API surface is the same on both kernels. `gmk_emit`, `gmk_chan_emit`, `gmk_a
 
 Two libraries, same API surface:
 
-* **libgmk** — GPU-side runtime. CUDA device code. Linked into the GMK/gpu kernel image.
-* **libgmk_cpu** — CPU-side runtime. C/Rust host code. Linked into the GMK/cpu binary.
+* **libgmk** — GPU-side runtime. CUDA device code. Linked into the GGMK/gpu kernel image.
+* **libgmk_cpu** — CPU-side runtime. C/Rust host code. Linked into the GGMK/cpu binary.
 
 Both expose the same function signatures (`gmk_emit`, `gmk_alloc`, `gmk_chan_emit`, etc.). A module written against the SDK compiles for either target. The implementations differ — libgmk uses HBM atomics and CUDA intrinsics; libgmk_cpu uses pthreads and host memory — but the interface is identical.
 
@@ -102,7 +102,7 @@ void  gmk_payload_release(gmk_ctx_t* ctx);   // release current task's payload (
 void  gmk_payload_retain(gmk_ctx_t* ctx);    // increment refcount (keep payload alive)
 ```
 
-`gmk_payload_retain` increments the ref-count, preventing auto-release from freeing the payload. **You must call this if you store a `payload_ptr` beyond handler scope** — into KV, module-private state, or any persistent data structure. The module is then responsible for calling `gmk_payload_release` when the stored pointer is no longer needed. The test harness (`gmk test`) runs in debug mode with payload poisoning to catch retain/release mismatches.
+`gmk_payload_retain` increments the ref-count, preventing auto-release from freeing the payload. **You must call this if you store a `payload_ptr` beyond handler scope** — into KV, module-private state, or any persistent data structure. The module is then responsible for calling `gmk_payload_release` when the stored pointer is no longer needed. The test harness (`ggmk test`) runs in debug mode with payload poisoning to catch retain/release mismatches.
 
 #### Channels
 
@@ -195,7 +195,7 @@ void gmk_sdk_logf(gmk_ctx_t* ctx, uint32_t level, const char* fmt, ...);
 Since `types.toml` defines payload schemas, the code generator produces strongly-typed accessor macros. These eliminate raw `void*` casting in handler code:
 
 ```c
-// Generated from types.toml by gmk typegen:
+// Generated from types.toml by ggmk typegen:
 GMK_PAYLOAD_DEF(kv_put_req, { uint64_t key; gmk_bytes_t value; });
 GMK_PAYLOAD_DEF(kv_get_resp, { uint64_t key; gmk_bytes_t value; uint32_t found; });
 
@@ -241,7 +241,7 @@ void gmk_sdk_stats_histogram(gmk_ctx_t* ctx, uint32_t metric_id, uint32_t sample
 
 ### 3.1 Concepts
 
-A channel is a named, typed, parallel conduit. Modules produce tasks onto channels. Other modules subscribe and receive those tasks as handler invocations. Channels are the pipes of GMK.
+A channel is a named, typed, parallel conduit. Modules produce tasks onto channels. Other modules subscribe and receive those tasks as handler invocations. Channels are the pipes of GGMK.
 
 Properties:
 * **Named**: unique string name, resolved to `uint32_t` ID at registration.
@@ -261,7 +261,7 @@ Properties:
 | CPU modules | `"net.rx"`, `"net.tx"`, `"disk.read"`, `"disk.write"`, `"cli.cmd"` |
 | User modules | `"sim.step"`, `"ml.batch"`, `"data.ingest"` |
 
-Channel names are **global across the system**. A channel named `"sim.results"` is the same channel whether the producer is on GMK/gpu and the consumer is on GMK/cpu. The channel registry resolves locality and transport at boot.
+Channel names are **global across the system**. A channel named `"sim.results"` is the same channel whether the producer is on GGMK/gpu and the consumer is on GGMK/cpu. The channel registry resolves locality and transport at boot.
 
 **Type registry**: maps type IDs to names and payload schemas. In v0.1 this is a static table defined in `types.toml`:
 
@@ -374,11 +374,11 @@ Channel closed mid-flight → routed to "sys.dropped"
 ```
 NIC (CPU) → GPU processing → storage (CPU)
 
-nic module on GMK/cpu produces on "net.rx"       (bridge → GPU)
-ingest module on GMK/gpu subscribes to "net.rx"
+nic module on GGMK/cpu produces on "net.rx"       (bridge → GPU)
+ingest module on GGMK/gpu subscribes to "net.rx"
 ingest produces on "data.clean"                   (local GPU channel)
-store module on GMK/gpu produces on "disk.write"  (bridge → CPU)
-nvme module on GMK/cpu subscribes to "disk.write"
+store module on GGMK/gpu produces on "disk.write"  (bridge → CPU)
+nvme module on GGMK/cpu subscribes to "disk.write"
 ```
 
 The modules don't know they're crossing kernel boundaries. `nic` produces on `"net.rx"` the same way `timer` produces on `"timer.fire"`. The bridge transport is invisible.
@@ -388,8 +388,8 @@ The modules don't know they're crossing kernel boundaries. `nic` produces on `"n
 ```
 Heavy compute on GPU, results consumed on CPU:
 
-sim module on GMK/gpu produces on "sim.results"
-analytics module on GMK/cpu subscribes to "sim.results"
+sim module on GGMK/gpu produces on "sim.results"
+analytics module on GGMK/cpu subscribes to "sim.results"
 analytics produces on "net.tx" (to send results over network)
 ```
 
@@ -409,14 +409,14 @@ These are performance guidelines, not API constraints. The bridge works correctl
 
 ## 4. Standard Modules
 
-Each module ships with GMK. These are production building blocks, not examples.
+Each module ships with GGMK. These are production building blocks, not examples.
 
 Standard modules are split across the two kernels:
 
 | Kernel | Modules |
 |---|---|
-| GMK/gpu | `kv`, `echo`, `reduce`, `timer`, `log`, `gate`, `stats` |
-| GMK/cpu | `gpu_drv`, `nic`, `nvme`, `watchdog`, `cli` |
+| GGMK/gpu | `kv`, `echo`, `reduce`, `timer`, `log`, `gate`, `stats` |
+| GGMK/cpu | `gpu_drv`, `nic`, `nvme`, `watchdog`, `cli` |
 
 ---
 
@@ -511,7 +511,7 @@ Receives log entries and writes them to the trace ring buffer and host TX queue.
 
 **Channels**:
 * Consumes: `"log.entry"`, `"sys.dropped"` (by default)
-* Produces: `"host.tx"` (bridge channel — delivers log records to GMK/cpu for display)
+* Produces: `"host.tx"` (bridge channel — delivers log records to GGMK/cpu for display)
 
 **SDK API**:
 ```c
@@ -519,7 +519,7 @@ void gmk_sdk_log(gmk_ctx_t* ctx, uint32_t level, const char* msg);
 void gmk_sdk_logf(gmk_ctx_t* ctx, uint32_t level, const char* fmt, ...);
 ```
 
-**Implementation**: log entries are tasks emitted on `"log.entry"`. The handler writes a trace record and emits to `"host.tx"` (a bridge channel). The `cli` module on GMK/cpu receives and renders log records. Level filtering at emit time — the SDK checks configured level before allocating. The `log` module also subscribes to `"sys.dropped"` by default, ensuring dead-letter events are always visible in `gmk log` output.
+**Implementation**: log entries are tasks emitted on `"log.entry"`. The handler writes a trace record and emits to `"host.tx"` (a bridge channel). The `cli` module on GGMK/cpu receives and renders log records. Level filtering at emit time — the SDK checks configured level before allocating. The `log` module also subscribes to `"sys.dropped"` by default, ensuring dead-letter events are always visible in `ggmk log` output.
 
 ---
 
@@ -557,7 +557,7 @@ void gmk_sdk_stats_gauge(gmk_ctx_t* ctx, uint32_t metric_id, uint32_t value);
 void gmk_sdk_stats_histogram(gmk_ctx_t* ctx, uint32_t metric_id, uint32_t sample);
 ```
 
-**Implementation**: three metric types — counters (monotonic), gauges (point-in-time), histograms (distribution). Stored as atomic counters in a fixed-size HBM array. The stats module periodically snapshots all metrics and emits them on `"host.tx"` (bridge channel). The `cli` module on GMK/cpu receives and aggregates metrics from both kernels.
+**Implementation**: three metric types — counters (monotonic), gauges (point-in-time), histograms (distribution). Stored as atomic counters in a fixed-size HBM array. The stats module periodically snapshots all metrics and emits them on `"host.tx"` (bridge channel). The `cli` module on GGMK/cpu receives and aggregates metrics from both kernels.
 
 ---
 
@@ -567,7 +567,7 @@ void gmk_sdk_stats_histogram(gmk_ctx_t* ctx, uint32_t metric_id, uint32_t sample
 
 ### 4.8 `gpu_drv` — GPU Driver Interface
 
-Manages the GPU hardware. Wraps `libcuda.so` + `nvidia.ko` (Path 1) or bare-metal GPU initialization (Path 3). This module is a **driver** — `libcuda.so` is a dependency of this module, not of the GMK system.
+Manages the GPU hardware. Wraps `libcuda.so` + `nvidia.ko` (Path 1) or bare-metal GPU initialization (Path 3). This module is a **driver** — `libcuda.so` is a dependency of this module, not of the GGMK system.
 
 **Channels**:
 * Produces: `"host.rx"` (bridge: delivers host/peripheral data to GPU)
@@ -575,12 +575,12 @@ Manages the GPU hardware. Wraps `libcuda.so` + `nvidia.ko` (Path 1) or bare-meta
 * Internal: manages all bridge channel DMA transfers
 
 **Responsibilities**:
-* GPU memory allocation (HBM buffers for GMK/gpu state)
+* GPU memory allocation (HBM buffers for GGMK/gpu state)
 * Persistent kernel launch
 * Bridge channel DMA: polls GPU-side ring buffers, transfers tasks bidirectionally
 * GPU reset and reboot (on request from `watchdog`)
 
-**Implementation**: at boot, `gpu_drv` loads the NVIDIA driver, allocates HBM (including the bridge allocation pool), uploads the GMK/gpu kernel image, and launches the persistent kernel. At runtime, it runs an asynchronous batched DMA loop:
+**Implementation**: at boot, `gpu_drv` loads the NVIDIA driver, allocates HBM (including the bridge allocation pool), uploads the GGMK/gpu kernel image, and launches the persistent kernel. At runtime, it runs an asynchronous batched DMA loop:
 
 * Polls GPU-side bridge ring buffers, pulling batches of up to `GMK_BRIDGE_BATCH_SIZE` (default 64) tasks per DMA read.
 * Marshals payloads transparently: copies non-inline payloads from HBM to host memory (GPU→CPU) or from host memory to HBM (CPU→GPU). Inline payloads (`meta0`/`meta1` only) cross without copy.
@@ -591,7 +591,7 @@ Manages the GPU hardware. Wraps `libcuda.so` + `nvidia.ko` (Path 1) or bare-meta
 
 ### 4.9 `nic` — Network I/O
 
-Manages network interface hardware. Provides packet-level I/O to the GMK system.
+Manages network interface hardware. Provides packet-level I/O to the GGMK system.
 
 **Channels**:
 * Produces: `"net.rx"` (incoming packets/messages)
@@ -615,77 +615,77 @@ Manages NVMe storage devices.
 
 ### 4.11 `watchdog` — Health Monitor
 
-Monitors GMK/gpu health from the CPU side.
+Monitors GGMK/gpu health from the CPU side.
 
 **Channels**:
 * Consumes: `"sys.heartbeat"` (bridge: GPU worker heartbeats)
 * Produces: `"sys.error"` (on timeout/hang detection)
 
-**Implementation**: GPU workers emit periodic heartbeat tasks on `"sys.heartbeat"` (a bridge channel). `watchdog` tracks per-worker heartbeat timestamps. Missed heartbeats trigger escalation: 2 missed = warning trace event, 5 missed = GPU reset request to `gpu_drv`. The `watchdog` module runs entirely on GMK/cpu and is unaffected by GPU hangs.
+**Implementation**: GPU workers emit periodic heartbeat tasks on `"sys.heartbeat"` (a bridge channel). `watchdog` tracks per-worker heartbeat timestamps. Missed heartbeats trigger escalation: 2 missed = warning trace event, 5 missed = GPU reset request to `gpu_drv`. The `watchdog` module runs entirely on GGMK/cpu and is unaffected by GPU hangs.
 
 ---
 
 ### 4.12 `cli` — Command-Line Interface
 
-The `gmk` shell. Runs on GMK/cpu and interacts with both kernels.
+The `ggmk` shell. Runs on GGMK/cpu and interacts with both kernels.
 
 **Channels**:
 * Produces: `"cli.cmd"` (user commands routed to appropriate kernel)
 * Consumes: `"cli.resp"` (responses from both kernels)
-* Subscribes: `"sys.trace"`, `"sys.error"` (for `gmk log` and `gmk trace`)
+* Subscribes: `"sys.trace"`, `"sys.error"` (for `ggmk log` and `ggmk trace`)
 
 **Implementation**: see §5 Host Shell for command details. The `cli` module translates user commands into tasks, emits them on the appropriate channels (local for CPU queries, bridge for GPU queries), and renders responses. It aggregates traces and metrics from both kernels for unified display.
 
 ---
 
-## 5. Host Shell (`gmk` CLI)
+## 5. Host Shell (`ggmk` CLI)
 
-The human face of GMK. Terse, composable, discoverable. The `cli` module runs on GMK/cpu and talks to both kernels through channels.
+The human face of GGMK. Terse, composable, discoverable. The `cli` module runs on GGMK/cpu and talks to both kernels through channels.
 
 ### 5.1 Commands
 
 ```
-gmk boot [config]            boot the system (GMK/cpu, then GMK/gpu)
-gmk halt                     graceful shutdown of all kernels
+ggmk boot [config]            boot the system (GGMK/cpu, then GGMK/gpu)
+ggmk halt                     graceful shutdown of all kernels
 
-gmk ps                       list all kernels, modules, and worker status
-gmk top                      live dashboard (both kernels)
-gmk log [--level LEVEL]      stream log output (both kernels)
-gmk trace [--filter EXPR] [--level LEVEL] [--module NAME]
+ggmk ps                       list all kernels, modules, and worker status
+ggmk top                      live dashboard (both kernels)
+ggmk log [--level LEVEL]      stream log output (both kernels)
+ggmk trace [--filter EXPR] [--level LEVEL] [--module NAME]
                              stream raw trace events (both kernels)
-gmk stats [metric]           show metrics (both kernels)
+ggmk stats [metric]           show metrics (both kernels)
 
-gmk emit TYPE [--payload JSON] [--chan NAME]
+ggmk emit TYPE [--payload JSON] [--chan NAME]
                              submit a task (routed to correct kernel)
 
-gmk chan ls                  list all channels (local + bridge)
-gmk chan inspect NAME        show channel state
+ggmk chan ls                  list all channels (local + bridge)
+ggmk chan inspect NAME        show channel state
 
-gmk mod ls                   list all modules (GPU + CPU)
-gmk mod info NAME            show module details
-gmk mod reset TYPE           clear poison flag for a handler type
+ggmk mod ls                   list all modules (GPU + CPU)
+ggmk mod info NAME            show module details
+ggmk mod reset TYPE           clear poison flag for a handler type
 
-gmk kern ls                  list kernels and status
-gmk kern info KERNEL_ID      show kernel details
+ggmk kern ls                  list kernels and status
+ggmk kern info KERNEL_ID      show kernel details
 
-gmk kv get KEY               read from kv store
-gmk kv put KEY VALUE         write to kv store
-gmk kv ls                    list keys
+ggmk kv get KEY               read from kv store
+ggmk kv put KEY VALUE         write to kv store
+ggmk kv ls                    list keys
 
-gmk new NAME [--target gpu|cpu]
+ggmk new NAME [--target gpu|cpu]
                              scaffold a new module (GPU or CPU)
-gmk build                    compile modules
-gmk test [NAME]              run module tests
+ggmk build                    compile modules
+ggmk test [NAME]              run module tests
 ```
 
-No subcommand nesting deeper than two levels. The most common operations are one word: `gmk ps`, `gmk top`, `gmk log`.
+No subcommand nesting deeper than two levels. The most common operations are one word: `ggmk ps`, `ggmk top`, `ggmk log`.
 
 ### 5.2 Live Monitoring
 
-**`gmk top`** — auto-refreshing dashboard showing both kernels:
+**`ggmk top`** — auto-refreshing dashboard showing both kernels:
 
 ```
-GMK v0.1 | gpu.0 + cpu.0 | tick 48,291 | uptime 00:14:32
+GGMK v0.1 | gpu.0 + cpu.0 | tick 48,291 | uptime 00:14:32
 ──────────────────────────────────────────────────────────
 
 GPU.0  workers: 58 active / 6 idle / 0 stalled
@@ -714,19 +714,19 @@ MODULES                                             KERNEL
 
 Updates every 500ms by aggregating metrics from both kernels. Does not stall the GPU.
 
-**`gmk log`** — live log stream:
+**`ggmk log`** — live log stream:
 
 ```
-$ gmk log --level warn
+$ ggmk log --level warn
 [00:14:33.421] WARN  physics  partition 17: CFL exceeded, reducing dt
 [00:14:33.422] WARN  physics  partition 23: CFL exceeded, reducing dt
 [00:14:34.001] WARN  kv       bucket 4091 contention: 48 spins
 ```
 
-**`gmk trace`** — raw trace stream:
+**`ggmk trace`** — raw trace stream:
 
 ```
-$ gmk trace --filter "type=TASK_START,module=physics"
+$ ggmk trace --filter "type=TASK_START,module=physics"
 [tick 48291] TASK_START  type=PHYS_STEP  worker=12  tenant=0  seq=9481023
 [tick 48291] TASK_START  type=PHYS_STEP  worker=14  tenant=0  seq=9481024
 ```
@@ -734,7 +734,7 @@ $ gmk trace --filter "type=TASK_START,module=physics"
 ### 5.3 Channel Inspection
 
 ```
-$ gmk chan ls
+$ ggmk chan ls
 NAME          MODE    DEPTH  EMIT/s  SUBS  PRODUCER     KERNEL
 sim.tick      fanout  0      1.2K    4     timer        gpu.0
 kv.put        p2p     34     8.4K    1     (multiple)   gpu.0
@@ -743,7 +743,7 @@ net.rx        p2p     0      4.2K    1     nic          cpu.0
 host.rx       bridge  1      4.2K    1     gpu_drv      gpu↔cpu
 host.tx       bridge  3      8.1K    1     (multiple)   gpu↔cpu
 
-$ gmk chan inspect kv.put
+$ ggmk chan inspect kv.put
 Channel: kv.put
   Kernel: gpu.0
   Mode: p2p
@@ -754,7 +754,7 @@ Channel: kv.put
   Subscriber: kv (handler KV_PUT)
   Producers: physics, ai, data_ingest
 
-$ gmk chan inspect host.rx
+$ ggmk chan inspect host.rx
 Channel: host.rx (bridge)
   Transport: PCIe DMA via gpu_drv
   Producer: gpu_drv (cpu.0) → consumer: (multiple) (gpu.0)
@@ -767,7 +767,7 @@ Channel: host.rx (bridge)
 ### 5.4 Module Inspection
 
 ```
-$ gmk mod ls
+$ ggmk mod ls
 NAME      VERSION  HANDLERS  CHANNELS  STATUS   KERNEL
 kv        0.1.0    3         3         running  gpu.0
 echo      0.1.0    1         2         running  gpu.0
@@ -780,7 +780,7 @@ nvme      0.1.0    3         3         running  cpu.0
 watchdog  0.1.0    1         2         running  cpu.0
 cli       0.1.0    2         3         running  cpu.0
 
-$ gmk mod info kv
+$ ggmk mod info kv
 Module: kv v0.1.0 (gpu.0)
 Handlers:
   KV_PUT  (type=10)  deterministic=no  shared=0B
@@ -793,7 +793,7 @@ Channels:
 Stats:
   puts/s: 8.4K   gets/s: 12.1K   bucket_util: 72%
 
-$ gmk kern ls
+$ ggmk kern ls
 KERNEL  ROLE        WORKERS  MODULES  STATUS
 gpu.0   compute     64       7        running
 cpu.0   peripheral  4        5        running
@@ -802,14 +802,14 @@ cpu.0   peripheral  4        5        running
 ### 5.5 Task Submission
 
 ```
-$ gmk emit SIM_START --payload '{"seed": 42, "steps": 1000}'
+$ ggmk emit SIM_START --payload '{"seed": 42, "steps": 1000}'
 task submitted: seq=9481025 type=SIM_START
 
-$ gmk emit SIM_START --chan sim.tick
+$ ggmk emit SIM_START --chan sim.tick
 task submitted: seq=9481026 type=SIM_START channel=sim.tick
 ```
 
-`gmk emit` supports both direct submission (to GRQ) and channel emission (with `--chan`). JSON payloads are serialized by the `cli` module on GMK/cpu using the type registry.
+`ggmk emit` supports both direct submission (to GRQ) and channel emission (with `--chan`). JSON payloads are serialized by the `cli` module on GGMK/cpu using the type registry.
 
 ---
 
@@ -818,14 +818,14 @@ task submitted: seq=9481026 type=SIM_START channel=sim.tick
 ### 6.1 Scaffold
 
 ```
-$ gmk new counter
+$ ggmk new counter
 Created module: counter/ (target: gpu)
   counter/counter.cu        module source
   counter/counter.h         public header
   counter/counter_test.cu   test harness
   counter/module.toml       manifest
 
-$ gmk new my_nic_filter --target cpu
+$ ggmk new my_nic_filter --target cpu
 Created module: my_nic_filter/ (target: cpu)
   my_nic_filter/my_nic_filter.c        module source
   my_nic_filter/my_nic_filter.h        public header
@@ -867,7 +867,7 @@ guarantee = "lossy"
 **Generated source** (`counter.cu`):
 
 ```c
-#include <gmk.h>
+#include <ggmk.h>
 #include <gmk_sdk.h>
 #include "counter.h"
 
@@ -908,13 +908,13 @@ GMK_MODULE(counter) = {
 ### 6.2 Build
 
 ```
-$ gmk build
+$ ggmk build
 [gpu] nvcc -dc counter/counter.cu -o counter/counter.o -I$GMK_INCLUDE
 [gpu] Compiled: counter/counter.o
 [cpu] cc -c my_nic_filter/my_nic_filter.c -o my_nic_filter/my_nic_filter.o
 [cpu] Compiled: my_nic_filter/my_nic_filter.o
 
-$ gmk build --kernel
+$ ggmk build --kernel
 [gpu] nvcc gmk_kernel.cu gpu_modules/*.o -o gmk_gpu.cubin
 [gpu] Built: gmk_gpu.cubin (12.4 MB, 8 modules, 23 handlers)
 [cpu] cc gmk_cpu_main.c cpu_modules/*.o -o gmk_cpu -lgmk_cpu -lpthread
@@ -928,15 +928,15 @@ Build flags:
 * `--strip-trace` — remove all `gmk_trace()` calls at compile time for zero-overhead production builds. Metrics are never stripped.
 * `--inline-reg-limit N` — override the register threshold for `__noinline__` isolation (default 32). Handlers exceeding N registers are compiled as `__noinline__` to prevent one heavy handler from destroying occupancy for all lightweight handlers.
 
-`gmk build --kernel` reports per-handler register counts:
+`ggmk build --kernel` reports per-handler register counts:
 
 ```
-$ gmk build --kernel
+$ ggmk build --kernel
   handler kv_put:      16 regs (inline)
   handler kv_get:      14 regs (inline)
   handler phys_step:   96 regs (__noinline__)
   handler ai_forward: 112 regs (__noinline__)
-Built: gmk.cubin (8 modules, 23 handlers, max_inline_regs=32)
+Built: ggmk.cubin (8 modules, 23 handlers, max_inline_regs=32)
   lmem: 0B (clean)
   shared_mem: max=32768B (ai_forward), blocks/SM: 2
 ```
@@ -946,7 +946,7 @@ If `ptxas` reports any register spilling to local memory (`Lmem > 0`), the build
 ### 6.3 Test Harness
 
 ```
-$ gmk test counter
+$ ggmk test counter
 Running tests for counter...
   [PASS] test_inc_basic            (0.3ms, 1 task)
   [PASS] test_inc_zero             (0.2ms, 1 task)
@@ -1010,10 +1010,10 @@ Each type in the registry declares behavioral policies that are validated at boo
 | `deterministic` | false | Whether this type participates in deterministic mode. If true, channels carrying this type use synchronous drain at tick boundaries |
 | `lossy` | true | Whether channels carrying this type default to `GMK_CHAN_LOSSY`. Set to false for correctness-critical types like simulation ticks |
 
-These policies collapse runtime traps into boot-time and build-time validation. GMK/cpu's boot orchestrator checks that lossless types are only carried on lossless channels, that deterministic types are only handled by `GMK_HF_DETERMINISTIC` handlers, and that `max_yields` is compatible with the handler's expected phase count.
+These policies collapse runtime traps into boot-time and build-time validation. GGMK/cpu's boot orchestrator checks that lossless types are only carried on lossless channels, that deterministic types are only handled by `GMK_HF_DETERMINISTIC` handlers, and that `max_yields` is compatible with the handler's expected phase count.
 
 ```
-$ gmk typegen types.toml -o include/gmk_types.h
+$ ggmk typegen types.toml -o include/gmk_types.h
 Generated: include/gmk_types.h (42 types)
 ```
 
@@ -1027,7 +1027,7 @@ From zero to running in 5 minutes.
 
 **Step 1**: scaffold.
 ```
-$ gmk new counter
+$ ggmk new counter
 ```
 
 **Step 2**: write the handler (~15 lines).
@@ -1050,27 +1050,27 @@ __device__ int counter_inc(gmk_ctx_t* ctx) {
 
 **Step 3**: build.
 ```
-$ gmk build && gmk build --kernel
+$ ggmk build && ggmk build --kernel
 ```
 
 **Step 4**: boot and test.
 ```
-$ gmk boot
-GMK/cpu.0  booted |  4 workers |  5 modules
-GMK/gpu.0  booted | 64 workers |  9 modules
+$ ggmk boot
+GGMK/cpu.0  booted |  4 workers |  5 modules
+GGMK/gpu.0  booted | 64 workers |  9 modules
 bridge channels: 4
 system ready
 
-$ gmk emit COUNTER_INC --meta0 41
+$ ggmk emit COUNTER_INC --meta0 41
 task submitted: seq=1 type=COUNTER_INC kernel=gpu.0
 
-$ gmk log
+$ ggmk log
 [00:00:01.203] INFO  counter  counter: 41 -> 42
 ```
 
 **Step 5**: inspect.
 ```
-$ gmk chan inspect counter.out
+$ ggmk chan inspect counter.out
 Channel: counter.out
   Mode: p2p
   Type: COUNTER_INC_RESP (id=101)
@@ -1129,7 +1129,7 @@ Notice that `ingest`, `transform`, and `store` never reference each other. They 
 Running the pipeline:
 
 ```
-$ gmk top
+$ ggmk top
 CHANNELS                                            KERNEL
   host.rx       bridge  depth: 3    emit/s: 10K     gpu↔cpu
   data.parsed   p2p     depth: 12   emit/s: 9.8K    gpu.0
@@ -1140,13 +1140,13 @@ CHANNELS                                            KERNEL
 
 **"My handler is slow"**: check task throughput and handler duration.
 ```
-$ gmk stats --module physics
+$ ggmk stats --module physics
   tasks/s: 24K    avg_duration: 4.2us    p99: 12us    yields: 340/s
 ```
 
 **"Messages are being dropped"**: check channel backpressure.
 ```
-$ gmk chan inspect sim.tick
+$ ggmk chan inspect sim.tick
   Full events: 1,203 (lifetime)
   Drop events: 47
 ```
@@ -1154,19 +1154,19 @@ Increase buffer slots or optimize the slow subscriber.
 
 **"Traces are too noisy / too expensive"**: control trace cost.
 ```
-$ gmk trace --level INFO --module physics   # only INFO+ from physics
-$ gmk trace --sample 0.01                   # 1% sampling, all modules
-$ gmk build --kernel --strip-trace          # zero-overhead production build
+$ ggmk trace --level INFO --module physics   # only INFO+ from physics
+$ ggmk trace --sample 0.01                   # 1% sampling, all modules
+$ ggmk build --kernel --strip-trace          # zero-overhead production build
 ```
 
 **"The system is stuck"**: check for stalled workers.
 ```
-$ gmk top
+$ ggmk top
 GPU.0  workers: 58 active / 0 idle / 6 stalled   <-- problem
 CPU.0  workers: 4 active / 0 idle / 0 stalled
 ```
 ```
-$ gmk trace --filter "ev=WATCHDOG"
+$ ggmk trace --filter "ev=WATCHDOG"
 [tick 48291] WATCHDOG  kernel=gpu.0  worker=12  missed=3
 [tick 48291] WATCHDOG  kernel=gpu.0  worker=17  missed=4
 ```
@@ -1182,7 +1182,7 @@ A handler is not yielding. Check which task type is running on stalled workers.
 |---|---|---|
 | Kernel API | `gmk_<verb>` | `gmk_emit`, `gmk_alloc`, `gmk_yield` |
 | SDK API | `gmk_sdk_<noun>_<verb>` | `gmk_sdk_kv_put`, `gmk_sdk_chan_send` |
-| CLI | `gmk <noun> [verb]` | `gmk ps`, `gmk log`, `gmk chan ls` |
+| CLI | `ggmk <noun> [verb]` | `ggmk ps`, `ggmk log`, `ggmk chan ls` |
 | Channels | `"namespace.verb"` | `"kv.put"`, `"sim.tick"`, `"log.entry"` |
 | Types | `UPPER_SNAKE` | `KV_PUT_REQ`, `SIM_STEP`, `COUNTER_INC` |
 | Constants | `GMK_` prefix | `GMK_OK`, `GMK_FAIL`, `GMK_CHAN_FULL` |

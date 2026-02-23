@@ -1,9 +1,9 @@
 /*
- * GMK/cpu — Channel tests: P2P, fan-out, backpressure, dead-letter, drain
+ * GGMK/cpu — Channel tests: P2P, fan-out, backpressure, dead-letter, drain
  */
-#include "gmk/trace.h"
-#include "gmk/metrics.h"
-#include "gmk/chan.h"
+#include "ggmk/trace.h"
+#include "ggmk/metrics.h"
+#include "ggmk/chan.h"
 #include "test_util.h"
 #include <string.h>
 

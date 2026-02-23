@@ -1,8 +1,8 @@
 /*
- * GMK/cpu — SPSC ring buffer implementation
+ * GGMK/cpu — SPSC ring buffer implementation
  */
-#include "gmk/ring_spsc.h"
-#include "gmk/hal.h"
+#include "ggmk/ring_spsc.h"
+#include "ggmk/hal.h"
 
 int gmk_ring_spsc_init(gmk_ring_spsc_t *r, uint32_t cap, uint32_t elem_size) {
     if (!r || !gmk_is_power_of_two(cap) || elem_size == 0)

@@ -1,8 +1,8 @@
 /*
- * GMK/cpu — gmk_boot/gmk_halt sequence
+ * GGMK/cpu — gmk_boot/gmk_halt sequence
  */
-#include "gmk/boot.h"
-#include "gmk/hal.h"
+#include "ggmk/boot.h"
+#include "ggmk/hal.h"
 
 int gmk_boot(gmk_kernel_t *k, const gmk_boot_cfg_t *cfg,
              gmk_module_t **modules_arr, uint32_t n_modules) {

@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Bump allocator tests
+ * GGMK/cpu — Bump allocator tests
  */
-#include "gmk/alloc.h"
+#include "ggmk/alloc.h"
 #include "test_util.h"
 #include <stdlib.h>
 #include <string.h>

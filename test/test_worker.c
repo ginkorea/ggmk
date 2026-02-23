@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Worker thread pool tests
+ * GGMK/cpu — Worker thread pool tests
  */
-#include "gmk/gmk.h"
+#include "ggmk/ggmk.h"
 #include "test_util.h"
 #include <string.h>
 #include <unistd.h>

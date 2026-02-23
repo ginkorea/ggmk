@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Physical page frame allocator (bitmap)
+ * GGMK/cpu — Physical page frame allocator (bitmap)
  */
 #ifndef GMK_PMM_H
 #define GMK_PMM_H

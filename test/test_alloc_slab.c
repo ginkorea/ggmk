@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Slab allocator tests
+ * GGMK/cpu — Slab allocator tests
  */
-#include "gmk/alloc.h"
+#include "ggmk/alloc.h"
 #include "test_util.h"
 #include <stdlib.h>
 

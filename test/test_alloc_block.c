@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Block allocator tests
+ * GGMK/cpu — Block allocator tests
  */
-#include "gmk/alloc.h"
+#include "ggmk/alloc.h"
 #include "test_util.h"
 #include <stdlib.h>
 #include <string.h>

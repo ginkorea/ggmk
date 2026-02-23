@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Virtio constants and virtqueue structures
+ * GGMK/cpu — Virtio constants and virtqueue structures
  *
  * Implements the split virtqueue layout per virtio spec v1.0 (legacy).
  */

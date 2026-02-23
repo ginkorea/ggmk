@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — SPSC ring buffer tests
+ * GGMK/cpu — SPSC ring buffer tests
  */
-#include "gmk/ring_spsc.h"
+#include "ggmk/ring_spsc.h"
 #include "test_util.h"
 #include <pthread.h>
 

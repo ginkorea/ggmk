@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Linux HAL: memory (libc wrappers)
+ * GGMK/cpu — Linux HAL: memory (libc wrappers)
  */
-#include "gmk/hal.h"
+#include "ggmk/hal.h"
 #include <stdlib.h>
 #include <string.h>
 

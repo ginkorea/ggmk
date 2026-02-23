@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Trace ring buffer + filtering
+ * GGMK/cpu — Trace ring buffer + filtering
  *
  * Per-tenant trace rings (SPSC). Level-based filtering.
  * Statistical sampling via fast PRNG.

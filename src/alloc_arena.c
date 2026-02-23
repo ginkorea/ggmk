@@ -1,8 +1,8 @@
 /*
- * GMK/cpu — Arena init/destroy (delegates to HAL)
+ * GGMK/cpu — Arena init/destroy (delegates to HAL)
  */
-#include "gmk/alloc.h"
-#include "gmk/hal.h"
+#include "ggmk/alloc.h"
+#include "ggmk/hal.h"
 
 int gmk_arena_init(gmk_arena_t *a, size_t size) {
     if (!a || size == 0) return -1;

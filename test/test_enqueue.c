@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Enqueue + yield tests
+ * GGMK/cpu — Enqueue + yield tests
  */
-#include "gmk/sched.h"
+#include "ggmk/sched.h"
 #include "test_util.h"
 #include <string.h>
 

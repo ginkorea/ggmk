@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — SPSC lock-free ring buffer
+ * GGMK/cpu — SPSC lock-free ring buffer
  * Single-producer, single-consumer. Used for LQ and trace rings.
  * Power-of-two capacity, mask-based indexing, elements copied via memcpy.
  */

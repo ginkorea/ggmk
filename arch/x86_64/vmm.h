@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Virtual Memory Manager
+ * GGMK/cpu — Virtual Memory Manager
  *
  * Provides a kernel heap with demand paging and TLB shootdown.
  */

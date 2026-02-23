@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Local APIC init, EOI, IPI, periodic timer
+ * GGMK/cpu — Local APIC init, EOI, IPI, periodic timer
  */
 #ifndef GMK_LAPIC_H
 #define GMK_LAPIC_H

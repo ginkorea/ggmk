@@ -1,10 +1,10 @@
 /*
- * GMK/cpu — _gmk_enqueue + _gmk_yield + gmk_yield/gmk_yield_at
+ * GGMK/cpu — _gmk_enqueue + _gmk_yield + gmk_yield/gmk_yield_at
  *
  * Single enqueue core: assigns monotonic seq, routes to LQ or RQ.
  * All scheduling paths funnel through _gmk_enqueue.
  */
-#include "gmk/sched.h"
+#include "ggmk/sched.h"
 
 int _gmk_enqueue(gmk_sched_t *s, gmk_task_t *task, int worker_id) {
     if (!s || !task) return -1;

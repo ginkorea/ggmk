@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Scheduler: RQ, LQ, EVQ, _gmk_enqueue
+ * GGMK/cpu — Scheduler: RQ, LQ, EVQ, _gmk_enqueue
  *
  * RQ: 4 MPMC sub-queues (one per priority). Weighted pop.
  * LQ: SPSC per worker. Yield watermark at 75%.

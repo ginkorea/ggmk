@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Local APIC: init, EOI, IPI, periodic timer
+ * GGMK/cpu — Local APIC: init, EOI, IPI, periodic timer
  *
  * LAPIC is memory-mapped at 0xFEE00000 (accessed via HHDM).
  */

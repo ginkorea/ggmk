@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Module system tests: dispatch table, poison detection
+ * GGMK/cpu — Module system tests: dispatch table, poison detection
  */
-#include "gmk/gmk.h"
+#include "ggmk/ggmk.h"
 #include "test_util.h"
 #include <string.h>
 

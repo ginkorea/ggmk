@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Arena, slab, block, bump allocators
+ * GGMK/cpu — Arena, slab, block, bump allocators
  *
  * One large aligned_alloc arena at boot, subdivided:
  *   10% task slab, 2% trace slab, 68% block allocator, 20% bump.

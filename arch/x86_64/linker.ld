@@ -1,4 +1,4 @@
-/* GMK/cpu — Higher-half kernel linker script for x86_64 + Limine */
+/* GGMK/cpu — Higher-half kernel linker script for x86_64 + Limine */
 
 OUTPUT_FORMAT(elf64-x86-64)
 ENTRY(_kstart)

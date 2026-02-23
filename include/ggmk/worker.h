@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Worker thread pool
+ * GGMK/cpu — Worker thread pool
  *
  * Hosted: N pthreads, park via HAL condvar.
  * Freestanding: N CPUs, park via HAL sti;hlt, wake via HAL LAPIC IPI.

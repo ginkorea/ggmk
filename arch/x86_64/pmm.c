@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Physical page frame allocator (bitmap over Limine memmap)
+ * GGMK/cpu — Physical page frame allocator (bitmap over Limine memmap)
  */
 #include "pmm.h"
 #include "mem.h"

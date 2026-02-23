@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — ISR assembly thunks for x86_64
+ * GGMK/cpu — ISR assembly thunks for x86_64
  *
  * Uses .altmacro to properly expand numeric vector arguments in .rept loops.
  */

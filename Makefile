@@ -1,5 +1,5 @@
 ##
-## GMK/cpu — Makefile
+## GGMK/cpu — Makefile
 ##
 
 CC      := gcc
@@ -10,7 +10,7 @@ LDFLAGS := -pthread -lm -ldl
 BUILD   := build
 SRC     := src
 TEST    := test
-INC     := include/gmk
+INC     := include/ggmk
 
 # ── Core source files ───────────────────────────────────────
 SRCS := $(SRC)/ring_spsc.c \
@@ -47,7 +47,7 @@ HAL_LINUX_OBJS := $(patsubst $(HAL_LINUX)/%.c,$(BUILD)/hal_linux_%.o,$(HAL_LINUX
 OBJS := $(CORE_OBJS) $(HAL_LINUX_OBJS)
 
 # ── Library ──────────────────────────────────────────────────
-LIB := $(BUILD)/libgmk_cpu.a
+LIB := $(BUILD)/libggmk_cpu.a
 
 # ── Test binaries ────────────────────────────────────────────
 TEST_BINS := $(BUILD)/test_ring_spsc \
@@ -118,7 +118,7 @@ KERN_DRV_OBJS := $(KERN_BUILD)/drv_virtio_pci.o $(KERN_BUILD)/drv_virtio_blk.o
 KERN_ALL_OBJS := $(KERN_SRC_OBJS) $(KERN_HAL_OBJS) $(KERN_ARCH_C_OBJS) $(KERN_ARCH_S_OBJS) $(KERN_DRV_OBJS)
 
 KERNEL_ELF := $(BUILD)/gmk_kernel.elf
-KERNEL_ISO := $(BUILD)/gmk.iso
+KERNEL_ISO := $(BUILD)/ggmk.iso
 
 # ── Phony targets ────────────────────────────────────────────
 .PHONY: all lib test clean kernel iso run run-debug \
@@ -152,7 +152,7 @@ $(BUILD)/test_%: $(TEST)/test_%.c $(LIB) | $(BUILD)
 
 # ── Run all tests ────────────────────────────────────────────
 test: $(TEST_BINS)
-	@echo "=== Running all GMK/cpu tests ==="
+	@echo "=== Running all GGMK/cpu tests ==="
 	@for t in $(TEST_BINS); do \
 		echo "--- Running $$t ---"; \
 		$$t || exit 1; \

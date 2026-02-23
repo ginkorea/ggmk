@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Umbrella include
+ * GGMK/cpu — Umbrella include
  *
- * #include "gmk/gmk.h" to get everything.
+ * #include "ggmk/ggmk.h" to get everything.
  */
 #ifndef GMK_GMK_H
 #define GMK_GMK_H

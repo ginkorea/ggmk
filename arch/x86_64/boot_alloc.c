@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — Boot-time bump allocator (never frees)
+ * GGMK/cpu — Boot-time bump allocator (never frees)
  */
 #include "boot_alloc.h"
 

@@ -1,19 +1,19 @@
-# GMK — GPU Microkernel
+# GGMK — Gompert Gompert GPU Microkernel
 
-A system of peer microkernels spanning GPU and CPU. The GPU kernel (GMK/gpu) owns compute: scheduling, memory, channels, and module dispatch via persistent CUDA kernels. The CPU kernel (GMK/cpu) owns peripherals: NIC, NVMe, DMA, and the GPU driver interface. Both kernels share the same architectural primitives — tasks, channels, modules, allocators, and observability. They communicate through cross-kernel channels over PCIe DMA. Neither is subordinate. Together they are GMK.
+A system of peer microkernels spanning GPU and CPU. The GPU kernel (GGMK/gpu) owns compute: scheduling, memory, channels, and module dispatch via persistent CUDA kernels. The CPU kernel (GGMK/cpu) owns peripherals: NIC, NVMe, DMA, and the GPU driver interface. Both kernels share the same architectural primitives — tasks, channels, modules, allocators, and observability. They communicate through cross-kernel channels over PCIe DMA. Neither is subordinate. Together they are GGMK.
 
 ## Status
 
-**GMK/cpu v0.2** — the CPU-side microkernel — is implemented and tested as both a hosted library and a bootable bare-metal x86_64 kernel. The same core source files compile in both modes with zero platform guards — a Hardware Abstraction Layer (`include/gmk/hal.h`) is the single point of platform selection. The hosted build links the Linux HAL (pthreads, libc); the bare-metal build links the x86 baremetal HAL (spinlocks, LAPIC IPI, PMM) and boots via the Limine protocol.
+**GGMK/cpu v0.2** — the CPU-side microkernel — is implemented and tested as both a hosted library and a bootable bare-metal x86_64 kernel. The same core source files compile in both modes with zero platform guards — a Hardware Abstraction Layer (`include/ggmk/hal.h`) is the single point of platform selection. The hosted build links the Linux HAL (pthreads, libc); the bare-metal build links the x86 baremetal HAL (spinlocks, LAPIC IPI, PMM) and boots via the Limine protocol.
 
 The bare-metal kernel now owns real peripherals: PCI bus enumeration, virtio-blk block device I/O, a virtual memory manager with demand paging and TLB shootdown, PIT-calibrated LAPIC timer, and IRQ-safe serial output. All 4 CPUs participate in work stealing with deterministic SMP synchronization.
 
-GMK/gpu (CUDA kernel) and cross-kernel bridge channels are planned for future work.
+GGMK/gpu (CUDA kernel) and cross-kernel bridge channels are planned for future work.
 
 ## Architecture
 
 ```
-GMK/gpu (GPU)                           GMK/cpu (CPU)
+GGMK/gpu (GPU)                           GGMK/cpu (CPU)
 ┌───────────────────────────┐          ┌───────────────────────────┐
 │ Worker Blocks [0..N-1]    │          │ Worker Threads [0..M-1]   │
 │   gather → dispatch → emit│          │   gather → dispatch → emit│
@@ -35,9 +35,9 @@ GMK/gpu (GPU)                           GMK/cpu (CPU)
 - **Channels are the composition primitive.** Modules communicate through named, typed channels — not function calls.
 - **Observe everything.** Traces and metrics are wired into every queue operation, every allocation, every dispatch.
 - **Fail gracefully.** Retry, backoff, poison detection, watchdog reset — these are the normal execution model.
-- **One system, many kernels.** GMK/gpu and GMK/cpu are peers. A module does not know which kernel its channel partner lives on.
+- **One system, many kernels.** GGMK/gpu and GGMK/cpu are peers. A module does not know which kernel its channel partner lives on.
 
-## GMK/cpu Subsystems
+## GGMK/cpu Subsystems
 
 | Subsystem | Description |
 |-----------|-------------|
@@ -56,7 +56,7 @@ GMK/gpu (GPU)                           GMK/cpu (CPU)
 
 ## Bare-Metal Kernel
 
-GMK/cpu runs as a freestanding x86_64 kernel booted by [Limine v8](https://github.com/limine-bootloader/limine). Each physical CPU becomes a GMK worker — BSP is worker 0, APs are workers 1..N-1.
+GGMK/cpu runs as a freestanding x86_64 kernel booted by [Limine v8](https://github.com/limine-bootloader/limine). Each physical CPU becomes a GGMK worker — BSP is worker 0, APs are workers 1..N-1.
 
 ### Boot Sequence
 
@@ -70,7 +70,7 @@ Limine → _kstart → serial(COM1, IRQ-safe lock) → GDT → IDT(256 vectors)
 
 ### HAL (Hardware Abstraction Layer)
 
-Core source files (`src/`, `include/gmk/`) contain zero `#ifdef GMK_FREESTANDING` guards. All platform differences are isolated behind `include/gmk/hal.h`, which selects the appropriate HAL implementation at compile time.
+Core source files (`src/`, `include/ggmk/`) contain zero `#ifdef GMK_FREESTANDING` guards. All platform differences are isolated behind `include/ggmk/hal.h`, which selects the appropriate HAL implementation at compile time.
 
 | HAL Function | Linux HAL (`hal/linux/`) | Baremetal HAL (`hal/x86_baremetal/`) |
 |--------------|--------------------------|--------------------------------------|
@@ -96,7 +96,7 @@ Additional bare-metal platform features (not behind HAL):
 ### File Layout
 
 ```
-include/gmk/
+include/ggmk/
   hal.h            HAL API — the ONE #ifdef selecting platform types
   lock.h           gmk_lock_t (delegates to HAL)
   worker.h         worker pool (uses HAL thread/park types)
@@ -194,7 +194,7 @@ make test-boot     # full boot → execute → halt lifecycle
 ## Quick Start
 
 ```c
-#include "gmk/gmk.h"
+#include "ggmk/ggmk.h"
 
 static int my_handler(gmk_ctx_t *ctx) {
     uint64_t value = ctx->task->meta0;

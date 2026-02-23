@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Linux HAL: park (condvar with CLOCK_MONOTONIC)
+ * GGMK/cpu — Linux HAL: park (condvar with CLOCK_MONOTONIC)
  */
-#include "gmk/hal.h"
+#include "ggmk/hal.h"
 #include <pthread.h>
 #include <time.h>
 

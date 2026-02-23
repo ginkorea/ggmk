@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — PCI bus enumeration via legacy I/O ports (0xCF8/0xCFC)
+ * GGMK/cpu — PCI bus enumeration via legacy I/O ports (0xCF8/0xCFC)
  */
 #ifndef GMK_PCI_H
 #define GMK_PCI_H

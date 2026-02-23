@@ -1,5 +1,5 @@
 /*
- * GMK/cpu — GDT: null, code64, data64, user code64, user data64
+ * GGMK/cpu — GDT: null, code64, data64, user code64, user data64
  */
 #include "gdt.h"
 #include <stdint.h>

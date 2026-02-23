@@ -1,7 +1,7 @@
 /*
- * GMK/cpu — Ready Queue tests
+ * GGMK/cpu — Ready Queue tests
  */
-#include "gmk/sched.h"
+#include "ggmk/sched.h"
 #include "test_util.h"
 #include <string.h>
 

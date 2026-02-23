@@ -1,9 +1,9 @@
 /*
- * GMK/cpu — Per-tenant trace rings, level check, sampling
+ * GGMK/cpu — Per-tenant trace rings, level check, sampling
  *
  * Sampling uses fixed-point uint32_t threshold (no floating point).
  */
-#include "gmk/trace.h"
+#include "ggmk/trace.h"
 #include <string.h>
 
 /* Fast xorshift PRNG */
